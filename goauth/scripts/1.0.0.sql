@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS path (
   `path_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'path no',
   `res_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource no for the path',
   `url` varchar(128) NOT NULL DEFAULT '' COMMENT 'path url',
+  `ptype` varchar(10) NOT NULL DEFAULT '' COMMENT 'path type: PROTECTED, PUBLIC',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
   `create_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who created this record',
   `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'when the record is updated',
