@@ -22,13 +22,208 @@ type CachedUrlRes struct {
 	Ptype  PathType // path type: PROTECTED, PUBLIC
 }
 
+type AddRoleReq struct {
+	Name string // role name
+}
+
+type TestResAccessReq struct {
+	RoleNo string `json:"roleNo"`
+	Url    string `json:"url"`
+}
+
+type ListRoleReq struct {
+	Paging common.Paging `json:"pagingVo"`
+}
+
+type ListRoleResp struct {
+	Payload []ERole       `json:"payload"`
+	Paging  common.Paging `json:"pagingVo"`
+}
+
+type ListPathReq struct {
+	Paging common.Paging `json:"pagingVo"`
+}
+
+type ListPathResp struct {
+	Paging  common.Paging `json:"pagingVo"`
+	Payload []EPath       `json:"payload"`
+}
+
+type BindPathResReq struct {
+	PathNo string `json:"pathNo"`
+	ResNo  string `json:"resNo"`
+}
+
+type UnbindPathResReq struct {
+	PathNo string `json:"pathNo"`
+}
+
+type ListRoleResReq struct {
+	Paging common.Paging `json:"pagingVo"`
+	RoleNo string        `json:"roleNo" validation:"notEmpty"`
+}
+
+type RemoveRoleResReq struct {
+	RoleNo string `json:"roleNo" validation:"notEmpty"`
+	ResNo  string `json:"resNo" validation:"notEmpty"`
+}
+
+type AddRoleResReq struct {
+	RoleNo string `json:"roleNo" validation:"notEmpty"`
+	ResNo  string `json:"resNo" validation:"notEmpty"`
+}
+
+type ListRoleResResp struct {
+	Paging  common.Paging   `json:"pagingVo"`
+	Payload []ListedRoleRes `json:"payload"`
+}
+
+type ListedRoleRes struct {
+	Id         int    // id
+	RoleNo     string // role no
+	ResNo      string // resource no
+	ResName    string // resource name
+	Url        string // url
+	CreateTime common.ETime
+	CreateBy   string
+	UpdateTime common.ETime
+	UpdateBy   string
+}
+
 var (
 	urlResCache  = redis.NewLazyRCache(30 * time.Minute) // cache for url's resource, url -> CachedUrlRes
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
 
+func UnbindPathRes(ec common.ExecContext, req UnbindPathResReq) error {
+	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) {
+		tx := mysql.GetMySql().Raw(`update path set res_no = '' where path_no = ?`, req.PathNo)
+		return nil, tx.Error
+	})
+	return e
+}
+
+func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
+	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) {
+		tx := mysql.GetMySql().Raw(`update path set res_no = ? where path_no = ?`, req.ResNo, req.PathNo)
+		return nil, tx.Error
+	})
+	return e
+}
+
+func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
+	var paths []EPath
+	tx := mysql.GetMySql().
+		Raw("select * from path where limit ?, ?", common.CalcOffset(&req.Paging), req.Paging.Limit).
+		Scan(&paths)
+	if tx.Error != nil {
+		return ListPathResp{}, tx.Error
+	}
+
+	var count int
+	tx = mysql.GetMySql().
+		Raw("select count(*) from path where limit ?, ?", common.CalcOffset(&req.Paging), req.Paging.Limit).
+		Scan(&count)
+	if tx.Error != nil {
+		return ListPathResp{}, tx.Error
+	}
+
+	return ListPathResp{Payload: paths, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
+}
+
+func AddRole(ec common.ExecContext, req AddRoleReq) error {
+	r := ERole{
+		Name: req.Name,
+	}
+	return mysql.GetMySql().Table("role").Save(r).Error
+}
+
+func RemoveResFromRole(ec common.ExecContext, req RemoveRoleResReq) error {
+	_, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) {
+		tx := mysql.GetMySql().Raw(`delete from role_resource where role_no = ? and res_no = ?`, req.RoleNo, req.ResNo)
+		return nil, tx.Error
+	})
+	return e
+}
+
+func AddResToRole(ec common.ExecContext, req AddRoleResReq) error {
+	_, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) {
+		tx := mysql.GetMySql().Raw(`select id from role_resource where role_no = ? and res_no = ?`, req.RoleNo, req.ResNo)
+		if tx.Error != nil {
+			return nil, tx.Error
+		}
+
+		if tx.RowsAffected > 0 {
+			return nil, common.NewWebErr("Resource already exists in this role")
+		}
+
+		rr := ERoleRes{
+			RoleNo:   req.RoleNo,
+			ResNo:    req.ResNo,
+			CreateBy: ec.User.Username,
+		}
+
+		tx = mysql.GetMySql().Table("role_resource").Save(rr)
+		return nil, tx.Error
+	})
+	return e
+}
+
+func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, error) {
+	var res []ListedRoleRes
+	offset := common.CalcOffset(&req.Paging)
+	tx := mysql.GetMySql().
+		Raw(`select rr.*, r.name 'res_name' from role_resource rr 
+			left join resource r on rr.res_no = r.res_no
+			where rr.role_no = ? limit ?, ?`, req.RoleNo, offset, req.Paging.Limit).
+		Scan(&res)
+
+	if tx.Error != nil {
+		return ListRoleResResp{}, tx.Error
+	}
+
+	if res == nil {
+		res = []ListedRoleRes{}
+	}
+
+	var count int
+	tx = mysql.GetMySql().
+		Raw(`select count(*) from role_resource rr 
+			left join resource r on rr.res_no = r.res_no
+			where rr.role_no = ? limit ?, ?`, req.RoleNo, offset, req.Paging.Limit).
+		Scan(&res)
+
+	if tx.Error != nil {
+		return ListRoleResResp{}, tx.Error
+	}
+
+	return ListRoleResResp{Payload: res, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
+}
+
+func ListRoles(ec common.ExecContext, req ListRoleReq) (ListRoleResp, error) {
+	var roles []ERole
+	offset := common.CalcOffset(&req.Paging)
+	tx := mysql.GetMySql().Raw("select * from role limit ?, ?", offset, req.Paging.Limit).Scan(&roles)
+	if tx.Error != nil {
+		return ListRoleResp{}, tx.Error
+	}
+	if roles == nil {
+		roles = []ERole{}
+	}
+
+	var count int
+	tx = mysql.GetMySql().Raw("select count(*) from role limit ?, ?", offset, req.Paging.Limit).Scan(&count)
+	if tx.Error != nil {
+		return ListRoleResp{}, tx.Error
+	}
+
+	return ListRoleResp{Payload: roles, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
+}
+
 // Test access to resource
-func TestResourceAccess(ec common.ExecContext, url string, roleNo string) error {
+func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) error {
+	url := req.Url
+	roleNo := req.RoleNo
 
 	// some sanitization & standardization for the url
 	url = preprocessUrl(url)
@@ -185,6 +380,12 @@ func preprocessUrl(url string) (processed_url string) {
 	if l < 1 {
 		processed_url = "/"
 		return
+	}
+
+	j := strings.LastIndex(url, "?")
+	if j > -1 {
+		ru = ru[0:j]
+		l = len(ru)
 	}
 
 	// never ends with '/'

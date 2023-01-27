@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS path (
 CREATE TABLE IF NOT EXISTS resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `res_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource no',
+  `name` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource name',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
   `create_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who created this record',
   `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'when the record is updated',
@@ -51,3 +52,7 @@ CREATE TABLE IF NOT EXISTS role (
   PRIMARY KEY (`id`),
   KEY `role_no` (`role_no`)
 ) ENGINE=InnoDB COMMENT='Roles';
+
+-- default one for administrator
+insert into role(role_no, name) values ('role_554107924873216177918', 'Administrator');
+-- TODO more default dml for the administrator with this specific role_no

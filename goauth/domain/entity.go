@@ -6,7 +6,7 @@ type PathType string
 
 const (
 	PT_PROTECTED = "PROTECTED"
-	PT_PUBLIC   = "PUBLIC"
+	PT_PUBLIC    = "PUBLIC"
 )
 
 type EPath struct {
@@ -20,30 +20,26 @@ type EPath struct {
 	CreateBy   string
 	UpdateTime common.ETime
 	UpdateBy   string
-	IsDel      common.IS_DEL
 }
 
 type ERes struct {
 	Id         int    // id
 	ResNo      string // resource no
-	Url        string // url
+	Name       string // resource name
 	CreateTime common.ETime
 	CreateBy   string
 	UpdateTime common.ETime
 	UpdateBy   string
-	IsDel      common.IS_DEL
 }
 
 type ERoleRes struct {
 	Id         int    // id
 	RoleNo     string // role no
 	ResNo      string // resource no
-	Url        string // url
 	CreateTime common.ETime
 	CreateBy   string
 	UpdateTime common.ETime
 	UpdateBy   string
-	IsDel      common.IS_DEL
 }
 
 type ERole struct {
@@ -54,5 +50,4 @@ type ERole struct {
 	CreateBy   string
 	UpdateTime common.ETime
 	UpdateBy   string
-	IsDel      common.IS_DEL
 }
