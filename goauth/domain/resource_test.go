@@ -1,11 +1,13 @@
 package domain
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/mysql"
 	"github.com/curtisnewbie/gocommon/redis"
+	"github.com/curtisnewbie/gocommon/server"
 )
 
 func before(t *testing.T) {
@@ -192,4 +194,135 @@ func TestTestResourceAccess(t *testing.T) {
 	if !r.Valid {
 		t.Fatal("should be valid")
 	}
+}
+
+func TestGenInitialPathRoleRes(t *testing.T) {
+	roleNo := "role_554107924873216177918"
+	roleName := "Administrator"
+	paths := []namedPath{
+		{
+			url:     server.OpenApiPath("/resource/add"),
+			resName: "Add Resource",
+		},
+		{
+			url:     server.OpenApiPath("/role/resource/add"),
+			resName: "Add Resource To Role",
+		},
+		{
+			url:     server.OpenApiPath("/role/resource/remove"),
+			resName: "Remove Resource From Role",
+		},
+		{
+			url:     server.OpenApiPath("/role/add"),
+			resName: "Add New Role",
+		},
+		{
+			url:     server.OpenApiPath("/role/list"),
+			resName: "List Roles",
+		},
+		{
+			url:     server.OpenApiPath("/role/resource/list"),
+			resName: "List Resources of Role",
+		},
+		{
+			url:     server.OpenApiPath("/path/list"),
+			resName: "List Paths",
+		},
+		{
+			url:     server.OpenApiPath("/path/resource/bind"),
+			resName: "Bind Path to Resource",
+		},
+		{
+			url:     server.OpenApiPath("/path/resource/unbind"),
+			resName: "Unbind Path and Resource",
+		},
+		{
+			url:     server.OpenApiPath("/path/delete"),
+			resName: "Delete Path",
+		},
+		{
+			url:     server.OpenApiPath("/path/add"),
+			resName: "Add Path",
+		},
+	}
+
+	initsql := fmt.Sprintf("INSERT INTO role(role_no, name) VALUES ('%s', '%s');", roleNo, roleName)
+	for i, p := range paths {
+		p.url = preprocessUrl(p.url)
+		p.pathNo = common.GenIdP("path_")
+		p.resNo = common.GenIdP("res_")
+		paths[i] = p
+	}
+
+	initsql += "\n\nINSERT INTO resource(res_no, name) VALUES"
+	for i, p := range paths {
+		if i > 0 {
+			initsql += ","
+		}
+		initsql += fmt.Sprintf("\n  ('%s', '%s')", p.resNo, p.resName)
+	}
+	initsql += ";"
+
+	initsql += "\n\nINSERT INTO role_resource(role_no, res_no) VALUES"
+	for i, p := range paths {
+		if i > 0 {
+			initsql += ","
+		}
+		initsql += fmt.Sprintf("\n  ('%s', '%s')", roleNo, p.resNo)
+	}
+	initsql += ";"
+
+	initsql += "\n\nINSERT INTO path(path_no, url, ptype, res_no, pgroup) VALUES"
+	for i, p := range paths {
+		if i > 0 {
+			initsql += ","
+		}
+		initsql += fmt.Sprintf("\n  ('%s', '%s', '%s', '%s', 'goauth')", p.pathNo, p.url, PT_PROTECTED, p.resNo)
+	}
+	initsql += ";"
+
+	t.Log("\n\n" + initsql + "\n\n")
+}
+
+type namedPath struct {
+	url     string
+	resName string
+	resNo   string
+	pathNo  string
+}
+
+func TestGeneratedInitScript(t *testing.T) {
+	before(t)
+
+	ec := common.EmptyExecContext()
+	LoadPathResCache(ec)
+	LoadRoleResCache(ec)
+
+	paths := []string{
+		server.OpenApiPath("/resource/add"),
+		server.OpenApiPath("/role/resource/add"),
+		server.OpenApiPath("/role/resource/remove"),
+		server.OpenApiPath("/role/add"),
+		server.OpenApiPath("/role/list"),
+		server.OpenApiPath("/role/resource/list"),
+		server.OpenApiPath("/path/list"),
+		server.OpenApiPath("/path/resource/bind"),
+		server.OpenApiPath("/path/resource/unbind"),
+		server.OpenApiPath("/path/delete"),
+		server.OpenApiPath("/path/add"),
+	}
+
+	for _, p := range paths {
+		r, e := TestResourceAccess(ec, TestResAccessReq{
+			RoleNo: "role_554107924873216177918",
+			Url:    p,
+		})
+		if e != nil {
+			t.Fatal(e)
+		}
+		if !r.Valid {
+			t.Fatalf("should be valid, url: '%s'", p)
+		}
+	}
+
 }

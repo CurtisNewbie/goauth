@@ -54,5 +54,43 @@ CREATE TABLE IF NOT EXISTS role (
 ) ENGINE=InnoDB COMMENT='Roles';
 
 -- default one for administrator
-insert into role(role_no, name) values ('role_554107924873216177918', 'Administrator');
--- TODO more default dml for the administrator with this specific role_no
+INSERT INTO role(role_no, name) VALUES ('role_554107924873216177918', 'Administrator');
+
+INSERT INTO resource(res_no, name) VALUES
+  ('res_555442491572225208429', 'Add Resource'),
+  ('res_555442491572227208429', 'Add Resource To Role'),
+  ('res_555442491572229208429', 'Remove Resource From Role'),
+  ('res_555442491572231208429', 'Add New Role'),
+  ('res_555442491572233208429', 'List Roles'),
+  ('res_555442491572235208429', 'List Resources of Role'),
+  ('res_555442491572237208429', 'List Paths'),
+  ('res_555442491572239208429', 'Bind Path to Resource'),
+  ('res_555442491572241208429', 'Unbind Path and Resource'),
+  ('res_555442491572243208429', 'Delete Path'),
+  ('res_555442491572245208429', 'Add Path');
+
+INSERT INTO role_resource(role_no, res_no) VALUES
+  ('role_554107924873216177918', 'res_555442491572225208429'),
+  ('role_554107924873216177918', 'res_555442491572227208429'),
+  ('role_554107924873216177918', 'res_555442491572229208429'),
+  ('role_554107924873216177918', 'res_555442491572231208429'),
+  ('role_554107924873216177918', 'res_555442491572233208429'),
+  ('role_554107924873216177918', 'res_555442491572235208429'),
+  ('role_554107924873216177918', 'res_555442491572237208429'),
+  ('role_554107924873216177918', 'res_555442491572239208429'),
+  ('role_554107924873216177918', 'res_555442491572241208429'),
+  ('role_554107924873216177918', 'res_555442491572243208429'),
+  ('role_554107924873216177918', 'res_555442491572245208429');
+
+INSERT INTO path(path_no, url, ptype, res_no, pgroup) VALUES
+  ('path_555442491572224208429', '/open/api/resource/add', 'PROTECTED', 'res_555442491572225208429', 'goauth'),
+  ('path_555442491572226208429', '/open/api/role/resource/add', 'PROTECTED', 'res_555442491572227208429', 'goauth'),
+  ('path_555442491572228208429', '/open/api/role/resource/remove', 'PROTECTED', 'res_555442491572229208429', 'goauth'),
+  ('path_555442491572230208429', '/open/api/role/add', 'PROTECTED', 'res_555442491572231208429', 'goauth'),
+  ('path_555442491572232208429', '/open/api/role/list', 'PROTECTED', 'res_555442491572233208429', 'goauth'),
+  ('path_555442491572234208429', '/open/api/role/resource/list', 'PROTECTED', 'res_555442491572235208429', 'goauth'),
+  ('path_555442491572236208429', '/open/api/path/list', 'PROTECTED', 'res_555442491572237208429', 'goauth'),
+  ('path_555442491572238208429', '/open/api/path/resource/bind', 'PROTECTED', 'res_555442491572239208429', 'goauth'),
+  ('path_555442491572240208429', '/open/api/path/resource/unbind', 'PROTECTED', 'res_555442491572241208429', 'goauth'),
+  ('path_555442491572242208429', '/open/api/path/delete', 'PROTECTED', 'res_555442491572243208429', 'goauth'),
+  ('path_555442491572244208429', '/open/api/path/add', 'PROTECTED', 'res_555442491572245208429', 'goauth');

@@ -65,6 +65,10 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.DeletePathReq) (any, error) {
 			return nil, domain.DeletePath(ec, req)
 		})
+	server.PostJ(server.OpenApiPath("/path/add"),
+		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
+			return nil, domain.CreatePathIfNotExist(ec, req)
+		})
 
 	// internal endpoints
 	server.PostJ(server.InternalApiPath("/path/resource/access-test"),
