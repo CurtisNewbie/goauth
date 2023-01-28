@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	// jobs
+	// jobs (with single instance only)
 	common.ScheduleCron("0 0/15 * * * *", func() {
 		ec := common.EmptyExecContext()
 		if e := domain.LoadRoleResCache(ec); e != nil {
@@ -25,9 +25,13 @@ func main() {
 	})
 
 	// open-api endpoints
+	server.PostJ(server.OpenApiPath("/resource/add"),
+		func(c *gin.Context, ec common.ExecContext, req domain.CreateResReq) (any, error) {
+			return nil, domain.CreateResourceIfNotExist(ec, req)
+		})
 	server.PostJ(server.OpenApiPath("/role/resource/add"),
 		func(c *gin.Context, ec common.ExecContext, req domain.AddRoleResReq) (any, error) {
-			return nil, domain.AddResToRole(ec, req)
+			return nil, domain.AddResToRoleIfNotExist(ec, req)
 		})
 	server.PostJ(server.OpenApiPath("/role/resource/remove"),
 		func(c *gin.Context, ec common.ExecContext, req domain.RemoveRoleResReq) (any, error) {
@@ -57,11 +61,19 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.UnbindPathResReq) (any, error) {
 			return nil, domain.UnbindPathRes(ec, req)
 		})
+	server.PostJ(server.OpenApiPath("/path/delete"),
+		func(c *gin.Context, ec common.ExecContext, req domain.DeletePathReq) (any, error) {
+			return nil, domain.DeletePath(ec, req)
+		})
 
 	// internal endpoints
 	server.PostJ(server.InternalApiPath("/path/resource/access-test"),
 		func(c *gin.Context, ec common.ExecContext, req domain.TestResAccessReq) (any, error) {
-			return nil, domain.TestResourceAccess(ec, req)
+			return domain.TestResourceAccess(ec, req)
+		})
+	server.PostJ(server.InternalApiPath("/path/add"),
+		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
+			return nil, domain.CreatePathIfNotExist(ec, req)
 		})
 
 	server.DefaultBootstrapServer(os.Args)
