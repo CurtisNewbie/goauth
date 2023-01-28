@@ -28,7 +28,7 @@ type CachedUrlRes struct {
 }
 
 type AddRoleReq struct {
-	Name string // role name
+	Name string `json:"name" validation:"notEmpty"` // role name
 }
 
 type TestResAccessReq struct {
@@ -59,12 +59,12 @@ type ListPathResp struct {
 }
 
 type BindPathResReq struct {
-	PathNo string `json:"pathNo"`
-	ResNo  string `json:"resNo"`
+	PathNo string `json:"pathNo" validation:"notEmpty"`
+	ResNo  string `json:"resNo" validation:"notEmpty"`
 }
 
 type UnbindPathResReq struct {
-	PathNo string `json:"pathNo"`
+	PathNo string `json:"pathNo" validation:"notEmpty"`
 }
 
 type ListRoleResReq struct {
@@ -110,7 +110,7 @@ type DeletePathReq struct {
 }
 
 type CreateResReq struct {
-	Name string `json:"name"`
+	Name string `json:"name" validation:"notEmpty"`
 }
 
 var (
