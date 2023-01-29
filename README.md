@@ -4,3 +4,5 @@ User and resource management service Implemented In Go (For Internal Use).
 
 - [ ] Implement resource management
 - [ ] ~~Reimplement auth-service~~ (maybe not, auth-service is working just fine)
+- [ ] Implement java client for goauth
+- [ ] Implement Go client for goauth
