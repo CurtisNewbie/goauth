@@ -16,5 +16,3 @@
 # vendor/
 .vscode/
 
-# compiled executable
-goauth

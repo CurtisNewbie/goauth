@@ -1,5 +1,7 @@
 mode.production: false
 
+app.name: "goauth"
+
 mysql:
   enabled: true 
   user: root
@@ -22,7 +24,7 @@ server:
   gracefulShutdownTimeSec: 5
 
 consul: 
-  enabled: true
+  enabled: false
   registerName: goauth
   consulAddress: localhost:8500
   healthCheckUrl: /health
