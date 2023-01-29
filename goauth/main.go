@@ -83,6 +83,10 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
 			return nil, domain.CreatePathIfNotExist(ec, req)
 		})
+	server.PostJ(server.OpenApiPath("/role/info"),
+		func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
+			return domain.GetRoleInfo(ec, req)
+		})
 
 	// internal endpoints
 	server.PostJ(server.InternalApiPath("/path/resource/access-test"),
@@ -93,6 +97,9 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
 			return nil, domain.CreatePathIfNotExist(ec, req)
 		})
-
+	server.PostJ(server.InternalApiPath("/role/info"),
+		func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
+			return domain.GetRoleInfo(ec, req)
+		})
 	server.DefaultBootstrapServer(os.Args)
 }

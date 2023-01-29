@@ -20,6 +20,19 @@ func before(t *testing.T) {
 	}
 }
 
+func TestGetRoleInfo(t *testing.T) {
+	before(t)
+
+	req := RoleInfoReq{
+		RoleNo: "role_554107924873216177918",
+	}
+	resp, e := GetRoleInfo(common.EmptyExecContext(), req)
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Logf("%v", resp)
+}
+
 func TestCreatePathIfNotExist(t *testing.T) {
 	before(t)
 
@@ -244,6 +257,10 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 			url:     server.OpenApiPath("/path/add"),
 			resName: "Add Path",
 		},
+		{
+			url:     server.OpenApiPath("/role/info"),
+			resName: "Fetch Role Info",
+		},
 	}
 
 	initsql := fmt.Sprintf("INSERT INTO role(role_no, name) VALUES ('%s', '%s');", roleNo, roleName)
@@ -310,6 +327,7 @@ func TestGeneratedInitScript(t *testing.T) {
 		server.OpenApiPath("/path/resource/unbind"),
 		server.OpenApiPath("/path/delete"),
 		server.OpenApiPath("/path/add"),
+		server.OpenApiPath("/role/info"),
 	}
 
 	for _, p := range paths {

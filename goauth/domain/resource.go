@@ -28,7 +28,7 @@ type CachedUrlRes struct {
 }
 
 type AddRoleReq struct {
-	Name string `json:"name" validation:"notEmpty"` // role name
+	Name string `json:"name" validation:"notEmpty,maxLen:32"` // role name
 }
 
 type TestResAccessReq struct {
@@ -99,10 +99,19 @@ type ListedRoleRes struct {
 	UpdateBy   string
 }
 
+type RoleInfoReq struct {
+	RoleNo string `json:"roleNo" validation:"notEmpty"`
+}
+
+type RoleInfoResp struct {
+	RoleNo string `json:"roleNo"`
+	Name   string `json:"name"`
+}
+
 type CreatePathReq struct {
 	Type  PathType `json:"type" validation:"notEmpty"`
-	Url   string   `json:"url" validation:"notEmpty"`
-	Group string   `json:"group" validation:"notEmpty"`
+	Url   string   `json:"url" validation:"notEmpty,maxLen:128"`
+	Group string   `json:"group" validation:"notEmpty,maxLen:20"`
 }
 
 type DeletePathReq struct {
@@ -110,13 +119,19 @@ type DeletePathReq struct {
 }
 
 type CreateResReq struct {
-	Name string `json:"name" validation:"notEmpty"`
+	Name string `json:"name" validation:"notEmpty,maxLen:32"`
 }
 
 var (
 	urlResCache  = redis.NewLazyRCache(30 * time.Minute) // cache for url's resource, url -> CachedUrlRes
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
+
+func GetRoleInfo(ec common.ExecContext, req RoleInfoReq) (RoleInfoResp, error) {
+	var resp RoleInfoResp
+	tx := mysql.GetMySql().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
+	return resp, tx.Error
+}
 
 func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 	req.Name = strings.TrimSpace(req.Name)
