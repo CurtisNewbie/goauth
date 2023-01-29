@@ -24,7 +24,7 @@ server:
   gracefulShutdownTimeSec: 5
 
 consul: 
-  enabled: false
+  enabled: true 
   registerName: goauth
   consulAddress: localhost:8500
   healthCheckUrl: /health

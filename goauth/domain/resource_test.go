@@ -214,51 +214,51 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 	roleName := "Administrator"
 	paths := []namedPath{
 		{
-			url:     server.OpenApiPath("/resource/add"),
+			url:     "goauth" + server.OpenApiPath("/resource/add"),
 			resName: "Add Resource",
 		},
 		{
-			url:     server.OpenApiPath("/role/resource/add"),
+			url:     "goauth" + server.OpenApiPath("/role/resource/add"),
 			resName: "Add Resource To Role",
 		},
 		{
-			url:     server.OpenApiPath("/role/resource/remove"),
+			url:     "goauth" + server.OpenApiPath("/role/resource/remove"),
 			resName: "Remove Resource From Role",
 		},
 		{
-			url:     server.OpenApiPath("/role/add"),
+			url:     "goauth" + server.OpenApiPath("/role/add"),
 			resName: "Add New Role",
 		},
 		{
-			url:     server.OpenApiPath("/role/list"),
+			url:     "goauth" + server.OpenApiPath("/role/list"),
 			resName: "List Roles",
 		},
 		{
-			url:     server.OpenApiPath("/role/resource/list"),
+			url:     "goauth" + server.OpenApiPath("/role/resource/list"),
 			resName: "List Resources of Role",
 		},
 		{
-			url:     server.OpenApiPath("/path/list"),
+			url:     "goauth" + server.OpenApiPath("/path/list"),
 			resName: "List Paths",
 		},
 		{
-			url:     server.OpenApiPath("/path/resource/bind"),
+			url:     "goauth" + server.OpenApiPath("/path/resource/bind"),
 			resName: "Bind Path to Resource",
 		},
 		{
-			url:     server.OpenApiPath("/path/resource/unbind"),
+			url:     "goauth" + server.OpenApiPath("/path/resource/unbind"),
 			resName: "Unbind Path and Resource",
 		},
 		{
-			url:     server.OpenApiPath("/path/delete"),
+			url:     "goauth" + server.OpenApiPath("/path/delete"),
 			resName: "Delete Path",
 		},
 		{
-			url:     server.OpenApiPath("/path/add"),
+			url:     "goauth" + server.OpenApiPath("/path/add"),
 			resName: "Add Path",
 		},
 		{
-			url:     server.OpenApiPath("/role/info"),
+			url:     "goauth" + server.OpenApiPath("/role/info"),
 			resName: "Fetch Role Info",
 		},
 	}
@@ -316,18 +316,18 @@ func TestGeneratedInitScript(t *testing.T) {
 	LoadRoleResCache(ec)
 
 	paths := []string{
-		server.OpenApiPath("/resource/add"),
-		server.OpenApiPath("/role/resource/add"),
-		server.OpenApiPath("/role/resource/remove"),
-		server.OpenApiPath("/role/add"),
-		server.OpenApiPath("/role/list"),
-		server.OpenApiPath("/role/resource/list"),
-		server.OpenApiPath("/path/list"),
-		server.OpenApiPath("/path/resource/bind"),
-		server.OpenApiPath("/path/resource/unbind"),
-		server.OpenApiPath("/path/delete"),
-		server.OpenApiPath("/path/add"),
-		server.OpenApiPath("/role/info"),
+		"goauth" + server.OpenApiPath("/resource/add"),
+		"goauth" + server.OpenApiPath("/role/resource/add"),
+		"goauth" + server.OpenApiPath("/role/resource/remove"),
+		"goauth" + server.OpenApiPath("/role/add"),
+		"goauth" + server.OpenApiPath("/role/list"),
+		"goauth" + server.OpenApiPath("/role/resource/list"),
+		"goauth" + server.OpenApiPath("/path/list"),
+		"goauth" + server.OpenApiPath("/path/resource/bind"),
+		"goauth" + server.OpenApiPath("/path/resource/unbind"),
+		"goauth" + server.OpenApiPath("/path/delete"),
+		"goauth" + server.OpenApiPath("/path/add"),
+		"goauth" + server.OpenApiPath("/role/info"),
 	}
 
 	for _, p := range paths {
