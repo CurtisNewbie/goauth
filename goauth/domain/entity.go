@@ -5,8 +5,8 @@ import "github.com/curtisnewbie/gocommon/common"
 type PathType string
 
 const (
-	PT_PROTECTED = "PROTECTED"
-	PT_PUBLIC    = "PUBLIC"
+	PT_PROTECTED PathType = "PROTECTED"
+	PT_PUBLIC    PathType = "PUBLIC"
 )
 
 type EPath struct {
