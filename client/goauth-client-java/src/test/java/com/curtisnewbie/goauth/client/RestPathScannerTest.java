@@ -22,7 +22,7 @@ public class RestPathScannerTest {
     @Test
     public void should_parse_rest_path() {
         List<RestPathScanner.RestPath> l = new ArrayList<>();
-        RestPathScanner.parseRestPath(l, DummyCtrl.class);
+        RestPathScanner.parseRestPath(l, DummyCtrl.class, t -> t);
         System.out.println(l);
         Assertions.assertEquals(12, l.size()); // 8 (for /any) + 4
     }

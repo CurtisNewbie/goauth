@@ -1,10 +1,12 @@
 package com.curtisnewbie.goauth.client;
 
 import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.aop.support.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
 import org.springframework.stereotype.*;
+import org.springframework.util.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.annotation.*;
@@ -21,6 +23,7 @@ import static java.util.Collections.*;
  *
  * @author yongj.zhuang
  */
+@Slf4j
 public class RestPathScanner implements ApplicationContextAware {
 
     private static final Map<Class<? extends Annotation>, MappingPathParser> clz2Parser = new HashMap<>();
@@ -78,7 +81,12 @@ public class RestPathScanner implements ApplicationContextAware {
         final Map<String, Object> beans = appCtx.getBeansWithAnnotation(Controller.class);
         final List<RestPath> restPaths = new ArrayList<>();
 
+        final StopWatch sw = new StopWatch();
+        sw.start();
         beans.forEach((k, v) -> parseRestPath(restPaths, AopUtils.getTargetClass(v), appCtx.getEnvironment()::resolvePlaceholders));
+        sw.stop();
+
+        log.info("GoAuth RestPath Scanned, found: {} REST paths, took: {}ms", restPaths.size(), sw.getTotalTimeMillis());
 
         synchronized (this) {
             this.parsedRestPaths = restPaths;
