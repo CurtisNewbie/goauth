@@ -1,6 +1,7 @@
 package com.curtisnewbie.goauth.client;
 
 import lombok.*;
+import org.springframework.aop.support.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
 import org.springframework.stereotype.*;
@@ -75,20 +76,18 @@ public class RestPathScanner implements ApplicationContextAware {
     @Override
     public void setApplicationContext(ApplicationContext appCtx) throws BeansException {
         final Map<String, Object> beans = appCtx.getBeansWithAnnotation(Controller.class);
-        beans.forEach((k, v) -> {
-            List<RestPath> restPaths = new ArrayList<>();
-            Class<?> beanClz = v.getClass();
-            parseRestPath(restPaths, beanClz);
+        final List<RestPath> restPaths = new ArrayList<>();
 
-            synchronized (this) {
-                this.parsedRestPaths = restPaths;
-                if (!this.onParsed.isEmpty()) {
-                    this.onParsed.forEach(callback -> {
-                        callback.accept(new ArrayList<>(this.parsedRestPaths));
-                    });
-                }
+        beans.forEach((k, v) -> parseRestPath(restPaths, AopUtils.getTargetClass(v), appCtx.getEnvironment()::resolvePlaceholders));
+
+        synchronized (this) {
+            this.parsedRestPaths = restPaths;
+            if (!this.onParsed.isEmpty()) {
+                this.onParsed.forEach(callback -> {
+                    callback.accept(new ArrayList<>(this.parsedRestPaths));
+                });
             }
-        });
+        }
     }
 
     /** Register onParsed callback */
@@ -103,13 +102,13 @@ public class RestPathScanner implements ApplicationContextAware {
         }
     }
 
-    public static void parseRestPath(List<RestPath> restPathList, Class<?> beanClz) {
+    public static void parseRestPath(List<RestPath> restPathList, Class<?> beanClz, Function<String, String> resolvePlaceholders) {
         String rootPath = "";
         final RequestMapping rootMapping = beanClz.getDeclaredAnnotation(RequestMapping.class);
         if (rootMapping != null) {
             final List<ParsedMapping> parsed = clz2Parser.get(RequestMapping.class).parsed(rootMapping);
             if (!parsed.isEmpty())
-                rootPath = parsed.get(0).requestPath;
+                rootPath = resolvePlaceholders.apply(parsed.get(0).requestPath);
         }
 
         final Method[] methods = beanClz.getDeclaredMethods();

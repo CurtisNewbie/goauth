@@ -5,6 +5,7 @@ import lombok.extern.slf4j.*;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.boot.test.context.*;
+import org.springframework.context.annotation.*;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 
