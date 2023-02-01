@@ -2,7 +2,7 @@ module github.com/curtisnewbie/goauth/client/goauth-client-go
 
 go 1.18
 
-require github.com/curtisnewbie/gocommon v1.0.3-0.20230130162127-3d341867156d
+require github.com/curtisnewbie/gocommon v1.0.3-0.20230201155314-4bf630cac65f
 
 require (
 	github.com/armon/go-metrics v0.4.0 // indirect
