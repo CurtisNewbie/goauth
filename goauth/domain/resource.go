@@ -108,6 +108,11 @@ type RoleInfoResp struct {
 	Name   string `json:"name"`
 }
 
+type UpdatePathReq struct {
+	Type   PathType `json:"type" validation:"notEmpty"`
+	PathNo string   `json:"pathNo" validation:"notEmpty"`
+	Group  string   `json:"group" validation:"notEmpty,maxLen:20"`
+}
 type CreatePathReq struct {
 	Type  PathType `json:"type" validation:"notEmpty"`
 	Url   string   `json:"url" validation:"notEmpty,maxLen:128"`
@@ -126,6 +131,15 @@ var (
 	urlResCache  = redis.NewLazyRCache(30 * time.Minute) // cache for url's resource, url -> CachedUrlRes
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
+
+func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
+	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) {
+		tx := mysql.GetMySql().Exec(`update path set pgroup = ?, ptype = ? where path_no = ?`, req.Group, req.Type,
+			req.PathNo)
+		return nil, tx.Error
+	})
+	return e
+}
 
 func GetRoleInfo(ec common.ExecContext, req RoleInfoReq) (RoleInfoResp, error) {
 	var resp RoleInfoResp

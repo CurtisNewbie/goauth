@@ -83,6 +83,10 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
 			return nil, domain.CreatePathIfNotExist(ec, req)
 		})
+	server.PostJ(server.OpenApiPath("/path/update"),
+		func(c *gin.Context, ec common.ExecContext, req domain.UpdatePathReq) (any, error) {
+			return nil, domain.UpdatePath(ec, req)
+		})
 	server.PostJ(server.OpenApiPath("/role/info"),
 		func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
 			return domain.GetRoleInfo(ec, req)

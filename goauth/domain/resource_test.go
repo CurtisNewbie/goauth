@@ -20,6 +20,20 @@ func before(t *testing.T) {
 	}
 }
 
+func TestUpdatePath(t *testing.T) {
+	before(t)
+
+	req := UpdatePathReq{
+		PathNo: "path_578477630062592208429",
+		Type:   PT_PUBLIC,
+		Group:  "goauth",
+	}
+	e := UpdatePath(common.EmptyExecContext(), req)
+	if e != nil {
+		t.Fatal(e)
+	}
+}
+
 func TestGetRoleInfo(t *testing.T) {
 	before(t)
 
@@ -261,6 +275,10 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 			url:     "goauth" + server.OpenApiPath("/role/info"),
 			resName: "Fetch Role Info",
 		},
+		{
+			url:     "goauth" + server.OpenApiPath("/path/update"),
+			resName: "Update Path Info",
+		},
 	}
 
 	initsql := fmt.Sprintf("INSERT INTO role(role_no, name) VALUES ('%s', '%s');", roleNo, roleName)
@@ -328,6 +346,7 @@ func TestGeneratedInitScript(t *testing.T) {
 		"goauth" + server.OpenApiPath("/path/delete"),
 		"goauth" + server.OpenApiPath("/path/add"),
 		"goauth" + server.OpenApiPath("/role/info"),
+		"goauth" + server.OpenApiPath("/path/update"),
 	}
 
 	for _, p := range paths {
