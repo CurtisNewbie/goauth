@@ -59,6 +59,10 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.ListRoleReq) (any, error) {
 			return domain.ListRoles(ec, req)
 		})
+	server.Get(server.OpenApiPath("/role/brief/all"),
+		func(c *gin.Context, ec common.ExecContext) (any, error) {
+			return domain.ListAllRoleBriefs(ec)
+		})
 	server.PostJ(server.OpenApiPath("/role/resource/list"),
 		func(c *gin.Context, ec common.ExecContext, req domain.ListRoleResReq) (any, error) {
 			return domain.ListRoleRes(ec, req)

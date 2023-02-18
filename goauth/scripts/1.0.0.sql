@@ -74,7 +74,8 @@ INSERT INTO resource(res_no, name) VALUES
 ('res_578477630062611208429', 'Delete Path'),
 ('res_578477630062613208429', 'Add Path'),
 ('res_578477630062615208429', 'Fetch Role Info'),
-('res_578477630062617208429', 'Update Path Info');
+('res_578477630062617208429', 'Update Path Info'),
+('res_585463207870465208429', 'List All Role Briefs');
 
 INSERT INTO role_resource(role_no, res_no) VALUES
 ('role_554107924873216177918', 'res_578477630062593208429'),
@@ -89,7 +90,8 @@ INSERT INTO role_resource(role_no, res_no) VALUES
 ('role_554107924873216177918', 'res_578477630062611208429'),
 ('role_554107924873216177918', 'res_578477630062613208429'),
 ('role_554107924873216177918', 'res_578477630062615208429'),
-('role_554107924873216177918', 'res_578477630062617208429');
+('role_554107924873216177918', 'res_578477630062617208429'),
+('role_554107924873216177918', 'res_585463207870465208429');
 
 INSERT INTO path(path_no, url, ptype, res_no, pgroup) VALUES
 ('path_578477630062592208429', '/goauth/open/api/resource/add', 'PROTECTED', 'res_578477630062593208429', 'goauth'),
@@ -104,4 +106,5 @@ INSERT INTO path(path_no, url, ptype, res_no, pgroup) VALUES
 ('path_578477630062610208429', '/goauth/open/api/path/delete', 'PROTECTED', 'res_578477630062611208429', 'goauth'),
 ('path_578477630062612208429', '/goauth/open/api/path/add', 'PROTECTED', 'res_578477630062613208429', 'goauth'),
 ('path_578477630062614208429', '/goauth/open/api/role/info', 'PROTECTED', 'res_578477630062615208429', 'goauth'),
-('path_578477630062616208429', '/goauth/open/api/path/update', 'PROTECTED', 'res_578477630062617208429', 'goauth');
+('path_578477630062616208429', '/goauth/open/api/path/update', 'PROTECTED', 'res_578477630062617208429', 'goauth'),
+('path_585463207870464208429', '/goauth/open/api/role/all', 'PROTECTED', 'res_585463207870465208429', 'goauth');

@@ -49,6 +49,11 @@ type ListRoleResp struct {
 	Paging  common.Paging `json:"pagingVo"`
 }
 
+type RoleBrief struct {
+	RoleNo string `json:"roleNo"`
+	Name   string `json:"name"`
+}
+
 type ListPathReq struct {
 	Paging common.Paging `json:"pagingVo"`
 }
@@ -339,6 +344,18 @@ func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, er
 	}
 
 	return ListRoleResResp{Payload: res, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
+}
+
+func ListAllRoleBriefs(ec common.ExecContext) ([]RoleBrief, error) {
+	var roles []RoleBrief
+	tx := mysql.GetMySql().Raw("select role_no, name from role").Scan(&roles)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if roles == nil {
+		roles = []RoleBrief{}
+	}
+	return roles, nil
 }
 
 func ListRoles(ec common.ExecContext, req ListRoleReq) (ListRoleResp, error) {
