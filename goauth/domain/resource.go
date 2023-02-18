@@ -368,24 +368,23 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 
 	// some sanitization & standardization for the url
 	url = preprocessUrl(url)
-	// ec.Log.Infof("Pre-processed url: '%s'", url)
 
 	// find resource required for the url
 	cur, e := lookupUrlRes(ec, url)
 	if e != nil {
 		return forbidden, e
 	}
-	// ec.Log.Infof("Look up url res '%+v'", cur)
 
 	// public path type, doesn't require access to resource
 	if cur.Ptype == PT_PUBLIC {
 		return permitted, nil
 	}
+	ec.Log.Infof("'%s' is protected, validating resource access", url)
 
 	// doesn't even have role
 	roleNo = strings.TrimSpace(roleNo)
 	if roleNo == "" {
-		ec.Log.Infof("Rejected '%s', roleNo: '%s', user role is empty", url, roleNo)
+		ec.Log.Infof("Rejected '%s', user doesn't have roleNo", url)
 		return forbidden, nil
 	}
 
@@ -403,7 +402,7 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 
 	// the role doesn't have access to the required resource
 	if !ok {
-		ec.Log.Infof("Rejected '%s', roleNo: '%s', lacking access to resource '%s'", url, roleNo, requiredRes)
+		ec.Log.Infof("Rejected '%s', roleNo: '%s', role doesn't have access to required resource '%s'", url, roleNo, requiredRes)
 		return forbidden, nil
 	}
 
