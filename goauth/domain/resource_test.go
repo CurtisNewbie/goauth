@@ -344,15 +344,6 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 	}
 	initsql += ";"
 
-	initsql += "\n\nINSERT INTO role_resource(role_no, res_no) VALUES"
-	for i, p := range paths {
-		if i > 0 {
-			initsql += ","
-		}
-		initsql += fmt.Sprintf("\n  ('%s', '%s')", roleNo, p.resNo)
-	}
-	initsql += ";"
-
 	initsql += "\n\nINSERT INTO path(path_no, url, ptype, res_no, pgroup) VALUES"
 	for i, p := range paths {
 		if i > 0 {

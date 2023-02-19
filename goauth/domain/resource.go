@@ -18,6 +18,10 @@ var (
 	forbidden = TestResAccessResp{Valid: false}
 )
 
+const (
+	DEFAULT_ADMIN_ROLE_NO = "role_554107924873216177918"
+)
+
 type CachedUrlRes struct {
 	Id     int      // id
 	Pgroup string   // path group
@@ -382,6 +386,10 @@ func ListRoles(ec common.ExecContext, req ListRoleReq) (ListRoleResp, error) {
 func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAccessResp, error) {
 	url := req.Url
 	roleNo := req.RoleNo
+
+	if roleNo == DEFAULT_ADMIN_ROLE_NO {
+		return permitted, nil
+	}
 
 	// some sanitization & standardization for the url
 	url = preprocessUrl(url)
