@@ -436,24 +436,29 @@ func checkRoleRes(ec common.ExecContext, roleNo string, resNo string) (bool, err
 }
 
 func LoadRoleResCache(ec common.ExecContext) error {
-	ec.Log.Info("Loading role resource cache")
-	lr, e := listRoleNos(ec)
-	if e != nil {
-		return e
-	}
 
-	for _, roleNo := range lr {
-		roleResList, e := listRoleRes(ec, roleNo)
+	_, e := redis.RLockRun(ec, "goauth:role:res:cache", func() (any, error) {
+
+		ec.Log.Info("Loading role resource cache")
+		lr, e := listRoleNos(ec)
 		if e != nil {
-			return e
+			return nil, e
 		}
 
-		for _, rr := range roleResList {
-			roleResCache.Put(ec, fmt.Sprintf("role:%s:res:%s", rr.RoleNo, rr.ResNo), "1")
-			ec.Log.Infof("Loaded RoleRes: '%s' -> '%s'", rr.RoleNo, rr.ResNo)
+		for _, roleNo := range lr {
+			roleResList, e := listRoleRes(ec, roleNo)
+			if e != nil {
+				return nil, e
+			}
+
+			for _, rr := range roleResList {
+				roleResCache.Put(ec, fmt.Sprintf("role:%s:res:%s", rr.RoleNo, rr.ResNo), "1")
+				ec.Log.Infof("Loaded RoleRes: '%s' -> '%s'", rr.RoleNo, rr.ResNo)
+			}
 		}
-	}
-	return nil
+		return nil, nil
+	})
+	return e
 }
 
 func listRoleNos(ec common.ExecContext) ([]string, error) {
@@ -500,28 +505,34 @@ func lookupUrlRes(ec common.ExecContext, url string) (CachedUrlRes, error) {
 }
 
 func LoadPathResCache(ec common.ExecContext) error {
-	ec.Log.Info("Loading path resource cache")
-	var paths []EPath
-	tx := mysql.GetMySql().Raw("select * from path").Scan(&paths)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	if paths == nil {
-		return nil
-	}
 
-	for _, ep := range paths {
-		ep.Url = preprocessUrl(ep.Url)
-		cachedStr, e := prepCachedUrlResStr(ec, ep)
-		if e != nil {
-			return e
+	_, e := redis.RLockRun(ec, "goauth:path:res:cache", func() (any, error) {
+
+		ec.Log.Info("Loading path resource cache")
+		var paths []EPath
+		tx := mysql.GetMySql().Raw("select * from path").Scan(&paths)
+		if tx.Error != nil {
+			return nil, tx.Error
 		}
-		if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
-			return e
+		if paths == nil {
+			return nil, nil
 		}
-		ec.Log.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
-	}
-	return nil
+
+		for _, ep := range paths {
+			ep.Url = preprocessUrl(ep.Url)
+			cachedStr, e := prepCachedUrlResStr(ec, ep)
+			if e != nil {
+				return nil, e
+			}
+			if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
+				return nil, e
+			}
+			ec.Log.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
+		}
+		return nil, nil
+	})
+
+	return e
 }
 
 func prepCachedUrlResStr(ec common.ExecContext, epath EPath) (string, error) {

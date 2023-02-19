@@ -48,6 +48,8 @@ public class RestPathReporter implements InitializingBean {
                 .map(p -> "/" + group + p.getCompletePath())
                 .distinct()
                 .forEach(url -> reportPath(group, url, PathType.PROTECTED, goAuthClient));
+
+        goAuthClient.reloadPathCache();
     }
 
     protected static void reportPath(String group, String url, PathType type, GoAuthClient goAuthClient) {
