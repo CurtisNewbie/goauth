@@ -447,7 +447,8 @@ func LoadRoleResCache(ec common.ExecContext) error {
 
 	_, e := redis.RLockRun(ec, "goauth:role:res:cache", func() (any, error) {
 
-		ec.Log.Info("Loading role resource cache")
+		// ec.Log.Info("Loading role resource cache")
+
 		lr, e := listRoleNos(ec)
 		if e != nil {
 			return nil, e
@@ -461,7 +462,7 @@ func LoadRoleResCache(ec common.ExecContext) error {
 
 			for _, rr := range roleResList {
 				roleResCache.Put(ec, fmt.Sprintf("role:%s:res:%s", rr.RoleNo, rr.ResNo), "1")
-				ec.Log.Infof("Loaded RoleRes: '%s' -> '%s'", rr.RoleNo, rr.ResNo)
+				// ec.Log.Infof("Loaded RoleRes: '%s' -> '%s'", rr.RoleNo, rr.ResNo)
 			}
 		}
 		return nil, nil
@@ -516,7 +517,8 @@ func LoadPathResCache(ec common.ExecContext) error {
 
 	_, e := redis.RLockRun(ec, "goauth:path:res:cache", func() (any, error) {
 
-		ec.Log.Info("Loading path resource cache")
+		// ec.Log.Info("Loading path resource cache")
+
 		var paths []EPath
 		tx := mysql.GetMySql().Raw("select * from path").Scan(&paths)
 		if tx.Error != nil {
@@ -535,7 +537,7 @@ func LoadPathResCache(ec common.ExecContext) error {
 			if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
 				return nil, e
 			}
-			ec.Log.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
+			// ec.Log.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
 		}
 		return nil, nil
 	})
