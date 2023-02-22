@@ -43,9 +43,9 @@ type ERoleRes struct {
 }
 
 type ERole struct {
-	Id         int    // id
-	RoleNo     string // role no
-	Name       string // role name
+	Id         int
+	RoleNo     string
+	Name       string
 	CreateTime common.ETime
 	CreateBy   string
 	UpdateTime common.ETime

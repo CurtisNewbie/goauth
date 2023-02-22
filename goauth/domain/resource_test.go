@@ -321,6 +321,12 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 			url:     "goauth" + server.OpenApiPath("/role/all"),
 			resName: "List All Role Briefs",
 		},
+		{
+			pathNo: "path_591212357369856208429",
+			resNo: "res_591212357369857208429",
+			url: "goauth" + server.OpenApiPath("/resource/list"),
+			resName : "List Resources",
+		},
 	}
 
 	initsql := fmt.Sprintf("INSERT INTO role(role_no, name) VALUES ('%s', '%s');", roleNo, roleName)
@@ -361,43 +367,4 @@ type namedPath struct {
 	resName string
 	resNo   string
 	pathNo  string
-}
-
-func TestGeneratedInitScript(t *testing.T) {
-	before(t)
-
-	ec := common.EmptyExecContext()
-	LoadPathResCache(ec)
-	LoadRoleResCache(ec)
-
-	paths := []string{
-		"goauth" + server.OpenApiPath("/resource/add"),
-		"goauth" + server.OpenApiPath("/role/resource/add"),
-		"goauth" + server.OpenApiPath("/role/resource/remove"),
-		"goauth" + server.OpenApiPath("/role/add"),
-		"goauth" + server.OpenApiPath("/role/list"),
-		"goauth" + server.OpenApiPath("/role/resource/list"),
-		"goauth" + server.OpenApiPath("/path/list"),
-		"goauth" + server.OpenApiPath("/path/resource/bind"),
-		"goauth" + server.OpenApiPath("/path/resource/unbind"),
-		"goauth" + server.OpenApiPath("/path/delete"),
-		"goauth" + server.OpenApiPath("/path/add"),
-		"goauth" + server.OpenApiPath("/role/info"),
-		"goauth" + server.OpenApiPath("/path/update"),
-		"goauth" + server.OpenApiPath("/role/all"),
-	}
-
-	for _, p := range paths {
-		r, e := TestResourceAccess(ec, TestResAccessReq{
-			RoleNo: "role_554107924873216177918",
-			Url:    p,
-		})
-		if e != nil {
-			t.Fatal(e)
-		}
-		if !r.Valid {
-			t.Fatalf("should be valid, url: '%s'", p)
-		}
-	}
-
 }

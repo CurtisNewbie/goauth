@@ -22,6 +22,16 @@ const (
 	DEFAULT_ADMIN_ROLE_NO = "role_554107924873216177918"
 )
 
+type WRole struct {
+	Id         int          `json:"id"`
+	RoleNo     string       `json:"roleNo"`
+	Name       string       `json:"name"`
+	CreateTime common.ETime `json:"createTime"`
+	CreateBy   string       `json:"createBy"`
+	UpdateTime common.ETime `json:"updateTime"`
+	UpdateBy   string       `json:"updateBy"`
+}
+
 type CachedUrlRes struct {
 	Id     int      // id
 	Pgroup string   // path group
@@ -49,7 +59,7 @@ type ListRoleReq struct {
 }
 
 type ListRoleResp struct {
-	Payload []ERole       `json:"payload"`
+	Payload []WRole       `json:"payload"`
 	Paging  common.Paging `json:"pagingVo"`
 }
 
@@ -62,9 +72,33 @@ type ListPathReq struct {
 	Paging common.Paging `json:"pagingVo"`
 }
 
+type WPath struct {
+	Id         int          `json:"id"`
+	ResName    string       `json:"resName"`
+	Pgroup     string       `json:"pgroup"`
+	PathNo     string       `json:"pathNo"`
+	ResNo      string       `json:"resNo"`
+	Url        string       `json:"url"`
+	Ptype      PathType     `json:"ptype"`
+	CreateTime common.ETime `json:"createTime"`
+	CreateBy   string       `json:"createBy"`
+	UpdateTime common.ETime `json:"updateTime"`
+	UpdateBy   string       `json:"updateBy"`
+}
+
+type WRes struct {
+	Id         int          `json:"id"`
+	ResNo      string       `json:"resNo"`
+	Name       string       `json:"name"`
+	CreateTime common.ETime `json:"createTime"`
+	CreateBy   string       `json:"createBy"`
+	UpdateTime common.ETime `json:"updateTime"`
+	UpdateBy   string       `json:"updateBy"`
+}
+
 type ListPathResp struct {
 	Paging  common.Paging `json:"pagingVo"`
-	Payload []EPath       `json:"payload"`
+	Payload []WPath       `json:"payload"`
 }
 
 type BindPathResReq struct {
@@ -132,6 +166,15 @@ type DeletePathReq struct {
 	PathNo string `json:"pathNo" validation:"notEmpty"`
 }
 
+type ListResReq struct {
+	Paging common.Paging `json:"pagingVo"`
+}
+
+type ListResResp struct {
+	Paging  common.Paging `json:"pagingVo"`
+	Payload []WRes        `json:"payload"`
+}
+
 type CreateResReq struct {
 	Name string `json:"name" validation:"notEmpty,maxLen:32"`
 }
@@ -140,6 +183,25 @@ var (
 	urlResCache  = redis.NewLazyRCache(30 * time.Minute) // cache for url's resource, url -> CachedUrlRes
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
+
+func ListResources(ec common.ExecContext, req ListResReq) (ListResResp, error) {
+	var resources []WRes
+	tx := mysql.GetMySql().Raw("select * from resource order by id desc limit ?, ?", common.CalcOffset(&req.Paging), req.Paging.Limit).Scan(&resources)
+	if tx.Error != nil {
+		return ListResResp{}, tx.Error
+	}
+	if resources == nil {
+		resources = []WRes{}
+	}
+
+	var count int
+	tx = mysql.GetMySql().Raw("select count(*) from resource").Scan(&count)
+	if tx.Error != nil {
+		return ListResResp{}, tx.Error
+	}
+
+	return ListResResp{Paging: common.RespPage(req.Paging, req.Paging.Total), Payload: resources}, nil
+}
 
 func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
 	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) {
@@ -249,9 +311,12 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 }
 
 func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
-	var paths []EPath
+	var paths []WPath
 	tx := mysql.GetMySql().
-		Raw("select * from path where limit ?, ?", common.CalcOffset(&req.Paging), req.Paging.Limit).
+		Raw(`select p.*, r.name res_name 
+			from path p left join resource r on p.res_no = r.res_no 
+			order by id desc limit ?, ?`,
+			common.CalcOffset(&req.Paging), req.Paging.Limit).
 		Scan(&paths)
 	if tx.Error != nil {
 		return ListPathResp{}, tx.Error
@@ -259,7 +324,7 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 
 	var count int
 	tx = mysql.GetMySql().
-		Raw("select count(*) from path where limit ?, ?", common.CalcOffset(&req.Paging), req.Paging.Limit).
+		Raw("select count(*) from path").
 		Scan(&count)
 	if tx.Error != nil {
 		return ListPathResp{}, tx.Error
@@ -363,18 +428,18 @@ func ListAllRoleBriefs(ec common.ExecContext) ([]RoleBrief, error) {
 }
 
 func ListRoles(ec common.ExecContext, req ListRoleReq) (ListRoleResp, error) {
-	var roles []ERole
+	var roles []WRole
 	offset := common.CalcOffset(&req.Paging)
-	tx := mysql.GetMySql().Raw("select * from role limit ?, ?", offset, req.Paging.Limit).Scan(&roles)
+	tx := mysql.GetMySql().Raw("select * from role order by id desc limit ?, ?", offset, req.Paging.Limit).Scan(&roles)
 	if tx.Error != nil {
 		return ListRoleResp{}, tx.Error
 	}
 	if roles == nil {
-		roles = []ERole{}
+		roles = []WRole{}
 	}
 
 	var count int
-	tx = mysql.GetMySql().Raw("select count(*) from role limit ?, ?", offset, req.Paging.Limit).Scan(&count)
+	tx = mysql.GetMySql().Raw("select count(*) from role").Scan(&count)
 	if tx.Error != nil {
 		return ListRoleResp{}, tx.Error
 	}
