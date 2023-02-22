@@ -200,7 +200,7 @@ func ListResources(ec common.ExecContext, req ListResReq) (ListResResp, error) {
 		return ListResResp{}, tx.Error
 	}
 
-	return ListResResp{Paging: common.RespPage(req.Paging, req.Paging.Total), Payload: resources}, nil
+	return ListResResp{Paging: common.RespPage(req.Paging, count), Payload: resources}, nil
 }
 
 func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
