@@ -186,7 +186,9 @@ var (
 
 func ListResources(ec common.ExecContext, req ListResReq) (ListResResp, error) {
 	var resources []WRes
-	tx := mysql.GetMySql().Raw("select * from resource order by id desc limit ?, ?", common.CalcOffset(&req.Paging), req.Paging.Limit).Scan(&resources)
+	tx := mysql.GetMySql().
+		Raw("select * from resource order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
+		Scan(&resources)
 	if tx.Error != nil {
 		return ListResResp{}, tx.Error
 	}
@@ -265,7 +267,7 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 		}
 
 		if id > 0 {
-			ec.Log.Infof("Path '%s' already exist", req.Url)
+			// ec.Log.Infof("Path '%s' already exist", req.Url)
 			return nil, nil
 		}
 
@@ -316,7 +318,7 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 		Raw(`select p.*, r.name res_name 
 			from path p left join resource r on p.res_no = r.res_no 
 			order by id desc limit ?, ?`,
-			common.CalcOffset(&req.Paging), req.Paging.Limit).
+			req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&paths)
 	if tx.Error != nil {
 		return ListPathResp{}, tx.Error
@@ -386,11 +388,10 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 
 func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
-	offset := common.CalcOffset(&req.Paging)
 	tx := mysql.GetMySql().
 		Raw(`select rr.*, r.name 'res_name' from role_resource rr 
 			left join resource r on rr.res_no = r.res_no
-			where rr.role_no = ? limit ?, ?`, req.RoleNo, offset, req.Paging.Limit).
+			where rr.role_no = ? limit ?, ?`, req.RoleNo, req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&res)
 
 	if tx.Error != nil {
@@ -429,8 +430,9 @@ func ListAllRoleBriefs(ec common.ExecContext) ([]RoleBrief, error) {
 
 func ListRoles(ec common.ExecContext, req ListRoleReq) (ListRoleResp, error) {
 	var roles []WRole
-	offset := common.CalcOffset(&req.Paging)
-	tx := mysql.GetMySql().Raw("select * from role order by id desc limit ?, ?", offset, req.Paging.Limit).Scan(&roles)
+	tx := mysql.GetMySql().
+		Raw("select * from role order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
+		Scan(&roles)
 	if tx.Error != nil {
 		return ListRoleResp{}, tx.Error
 	}

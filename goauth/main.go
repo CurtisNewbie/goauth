@@ -129,14 +129,12 @@ func main() {
 	// report paths (to itself) on bootstrap
 	server.OnServerBootstrapped(func() {
 		ec := common.EmptyExecContext()
-		ec.Log.Info("Preparting to create paths for goauth")
-
 		routes := server.GetRecordedServerRoutes()
 		for _, u := range routes {
 			url := "/goauth" + u
 			e := domain.CreatePathIfNotExist(ec, domain.CreatePathReq{Type: domain.PT_PROTECTED, Url: url, Group: "goauth"})
 			if e != nil {
-				ec.Log.Fatalf("Failed CreatePathIfNotExist on bootstrap, path: %s, %v", url, e)
+				ec.Log.Fatalf("Failed CreatePathIfNotExist (for goauth) on bootstrap, path: %s, %v", url, e)
 			}
 		}
 	})
