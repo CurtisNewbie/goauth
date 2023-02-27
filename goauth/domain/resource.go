@@ -41,6 +41,11 @@ type CachedUrlRes struct {
 	Ptype  PathType // path type: PROTECTED, PUBLIC
 }
 
+type ResBrief struct {
+	ResNo string `json:"resNo"`
+	Name  string `json:"name"`
+}
+
 type AddRoleReq struct {
 	Name string `json:"name" validation:"notEmpty,maxLen:32"` // role name
 }
@@ -183,6 +188,18 @@ var (
 	urlResCache  = redis.NewLazyRCache(30 * time.Minute) // cache for url's resource, url -> CachedUrlRes
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
+
+func ListAllResBriefs(ec common.ExecContext) ([]ResBrief, error) {
+	var res []ResBrief
+	tx := mysql.GetMySql().Raw("select res_no, name, name from resource").Scan(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if res == nil {
+		res = []ResBrief{}
+	}
+	return res, nil
+}
 
 func ListResources(ec common.ExecContext, req ListResReq) (ListResResp, error) {
 	var resources []WRes

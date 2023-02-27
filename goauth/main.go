@@ -43,6 +43,10 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.CreateResReq) (any, error) {
 			return nil, domain.CreateResourceIfNotExist(ec, req)
 		})
+	server.Get(server.OpenApiPath("/resource/brief/all"),
+		func(c *gin.Context, ec common.ExecContext) (any, error) {
+			return domain.ListAllResBriefs(ec)
+		})
 	server.PostJ(server.OpenApiPath("/resource/list"),
 		func(c *gin.Context, ec common.ExecContext, req domain.ListResReq) (any, error) {
 			return domain.ListResources(ec, req)
