@@ -77,6 +77,7 @@ type RoleBrief struct {
 type ListPathReq struct {
 	Pgroup string        `json:"pgroup"`
 	Url    string        `json:"url"`
+	Ptype  PathType      `json:"ptype"`
 	Paging common.Paging `json:"pagingVo"`
 }
 
@@ -238,6 +239,29 @@ func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
 			req.PathNo)
 		return nil, tx.Error
 	})
+
+	if e == nil {
+		go func(ec common.ExecContext, pathNo string) {
+			ec.Log.Infof("Refreshing path cache, pathNo: %s", pathNo)
+			ep, e := findPath(pathNo)
+			if e != nil {
+				ec.Log.Errorf("Failed to reload path cache, pathNo: %s, %v", pathNo, e)
+				return
+			}
+
+			ep.Url = preprocessUrl(ep.Url)
+			cachedStr, e := prepCachedUrlResStr(ec, ep)
+			if e != nil {
+				ec.Log.Errorf("Failed to prepare cached url resource, pathNo: %s, %v", pathNo, e)
+				return
+			}
+
+			if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
+				ec.Log.Errorf("Failed to save cached url resource, pathNo: %s, %v", pathNo, e)
+				return
+			}
+		}(ec, req.PathNo)
+	}
 	return e
 }
 
@@ -371,9 +395,11 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	if req.Pgroup != "" {
 		tx = tx.Where("p.pgroup = ?", req.Pgroup)
 	}
-
 	if req.Url != "" {
-		tx = tx.Where("p.url like ?", req.Url + "%")
+		tx = tx.Where("p.url like ?", req.Url+"%")
+	}
+	if req.Ptype != "" {
+		tx = tx.Where("p.ptype = ?", req.Ptype)
 	}
 
 	tx = tx.Offset(req.Paging.GetOffset()).
@@ -715,4 +741,18 @@ func preprocessUrl(url string) string {
 		url = "/" + url
 	}
 	return url
+}
+
+func findPath(pathNo string) (EPath, error) {
+	var ep EPath
+	tx := mysql.GetMySql().Raw("select * from path where path_no = ?", pathNo).Scan(&ep)
+	if tx.Error != nil {
+		return ep, tx.Error
+	}
+
+	if tx.RowsAffected < 1 {
+		return ep, common.NewWebErr("Path not found")
+	}
+
+	return ep, nil
 }
