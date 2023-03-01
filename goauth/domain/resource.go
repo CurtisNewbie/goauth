@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/mysql"
@@ -161,9 +162,16 @@ type UpdatePathReq struct {
 	PathNo string   `json:"pathNo" validation:"notEmpty"`
 	Group  string   `json:"group" validation:"notEmpty,maxLen:20"`
 }
+
 type CreatePathReq struct {
 	Type  PathType `json:"type" validation:"notEmpty"`
 	Url   string   `json:"url" validation:"notEmpty,maxLen:128"`
+	Group string   `json:"group" validation:"notEmpty,maxLen:20"`
+}
+
+type BatchCreatePathReq struct {
+	Type  PathType `json:"type" validation:"notEmpty"`
+	Urls  []string `json:"urls"`
 	Group string   `json:"group" validation:"notEmpty,maxLen:20"`
 }
 
@@ -272,6 +280,27 @@ func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 		return nil, tx.Error
 	})
 	return e
+}
+
+func BatchCreatePathIfNotExist(ec common.ExecContext, req BatchCreatePathReq) error {
+	if req.Urls == nil {
+		return nil
+	}
+
+	for _, u := range req.Urls {
+		if utf8.RuneCountInString(u) > 128 {
+			return common.NewWebErr("URL exceeded maximum length 128")
+		}
+
+		if e := CreatePathIfNotExist(ec, CreatePathReq{
+			Type:  req.Type,
+			Group: req.Group,
+			Url:   u,
+		}); e != nil {
+			return e
+		}
+	}
+	return nil
 }
 
 func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {

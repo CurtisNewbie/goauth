@@ -11,12 +11,14 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
+
 /**
  * @author yongj.zhuang
  */
 @Slf4j
 @EnableFeignClients
-@SpringBootTest
+@SpringBootTest(classes = GoAuthClientTest.class)
 @EnableDiscoveryClient
 @SpringBootApplication
 public class GoAuthClientTest {
@@ -59,5 +61,15 @@ public class GoAuthClientTest {
         Assertions.assertTrue(StringUtils.hasText(r.getRoleNo()));
         Assertions.assertTrue(StringUtils.hasText(r.getName()));
         log.info("Resp: {}", r);
+    }
+
+    @Test
+    public void should_batch_add_path() {
+        final BatchAddPathReq req = new BatchAddPathReq();
+        req.setUrls(Arrays.asList("/test/url"));
+        req.setType(PathType.PROTECTED);
+        req.setGroup("goauth-client-java");
+        final Result<Void> result = goAuthClient.batchAddPath(req);
+        result.assertIsOk();
     }
 }

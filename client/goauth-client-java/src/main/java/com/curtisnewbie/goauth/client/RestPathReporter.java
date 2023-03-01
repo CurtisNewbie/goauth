@@ -9,6 +9,7 @@ import org.springframework.util.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * Reporter of REST paths parsed by RestPathScanner
@@ -44,12 +45,32 @@ public class RestPathReporter implements InitializingBean {
     }
 
     protected static void reportPaths(List<RestPathScanner.RestPath> restPaths, String group, GoAuthClient goAuthClient) {
-        restPaths.stream()
+        final List<String> paths = restPaths.stream()
                 .map(p -> "/" + group + p.getCompletePath())
                 .distinct()
-                .forEach(url -> reportPath(group, url, PathType.PROTECTED, goAuthClient));
-
+                .collect(Collectors.toList());
+        batchReportPaths(group, paths, PathType.PROTECTED, goAuthClient);
         goAuthClient.reloadPathCache();
+    }
+
+    protected static void batchReportPaths(String group, List<String> urls, PathType type, GoAuthClient goAuthClient) {
+        try {
+            BatchAddPathReq req = new BatchAddPathReq();
+            req.setGroup(group);
+            req.setType(type);
+            req.setUrls(urls);
+
+            final Result<Void> res = goAuthClient.batchAddPath(req);
+            if (!res.isOk()) {
+                log.error("Failed to report path to goauth, group: {}, type: {}, url: {}, error code: {}, error msg: {}",
+                        req.getGroup(), req.getType(), req.getUrls(), res.getErrorCode(), res.getMsg());
+                return;
+            }
+
+            log.info("Reported paths '{}' to goauth", req.getUrls());
+        } catch (Throwable e) {
+            log.error("Failed to report path to goauth, group: {}, type: {}, url: {}", group, type, urls, e);
+        }
     }
 
     protected static void reportPath(String group, String url, PathType type, GoAuthClient goAuthClient) {

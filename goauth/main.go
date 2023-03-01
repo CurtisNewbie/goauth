@@ -113,6 +113,10 @@ func main() {
 		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
 			return nil, domain.CreatePathIfNotExist(ec, req)
 		})
+	server.PostJ(server.InternalApiPath("/path/batch/add"),
+		func(c *gin.Context, ec common.ExecContext, req domain.BatchCreatePathReq) (any, error) {
+			return nil, domain.BatchCreatePathIfNotExist(ec, req)
+		})
 	server.PostJ(server.InternalApiPath("/role/info"),
 		func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
 			return domain.GetRoleInfo(ec, req)
@@ -134,13 +138,16 @@ func main() {
 	server.OnServerBootstrapped(func() {
 		ec := common.EmptyExecContext()
 		routes := server.GetRecordedServerRoutes()
-		for _, u := range routes {
-			url := "/goauth" + u
-			e := domain.CreatePathIfNotExist(ec, domain.CreatePathReq{Type: domain.PT_PROTECTED, Url: url, Group: "goauth"})
-			if e != nil {
-				ec.Log.Fatalf("Failed CreatePathIfNotExist (for goauth) on bootstrap, path: %s, %v", url, e)
-			}
+
+		for i, u := range routes {
+			routes[i] = "/goauth" + u
 		}
+
+		domain.BatchCreatePathIfNotExist(ec, domain.BatchCreatePathReq{
+			Type:  domain.PT_PROTECTED,
+			Group: "goauth",
+			Urls:  routes,
+		})
 	})
 
 	// bootstrap server
