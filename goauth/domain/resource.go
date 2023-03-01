@@ -75,6 +75,8 @@ type RoleBrief struct {
 }
 
 type ListPathReq struct {
+	Pgroup string        `json:"pgroup"`
+	Url    string        `json:"url"`
 	Paging common.Paging `json:"pagingVo"`
 }
 
@@ -361,10 +363,21 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	var paths []WPath
 	tx := mysql.GetMySql().
-		Raw(`select p.*, r.name res_name 
-			from path p left join resource r on p.res_no = r.res_no 
-			order by id desc limit ?, ?`,
-			req.Paging.GetOffset(), req.Paging.GetLimit()).
+		Table("path p").
+		Select("p.*, r.name res_name").
+		Joins("left join resource r on p.res_no = r.res_no").
+		Order("id desc")
+
+	if req.Pgroup != "" {
+		tx = tx.Where("p.pgroup = ?", req.Pgroup)
+	}
+
+	if req.Url != "" {
+		tx = tx.Where("p.url like ?", req.Url + "%")
+	}
+
+	tx = tx.Offset(req.Paging.GetOffset()).
+		Limit(req.Paging.GetLimit()).
 		Scan(&paths)
 	if tx.Error != nil {
 		return ListPathResp{}, tx.Error
