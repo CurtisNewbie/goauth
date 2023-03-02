@@ -46,6 +46,7 @@ public class RestPathReporter implements InitializingBean {
 
     protected static void reportPaths(List<RestPathScanner.RestPath> restPaths, String group, GoAuthClient goAuthClient) {
         final List<String> paths = restPaths.stream()
+                .filter(p -> !p.requestPath.startsWith("/remote"))
                 .map(p -> "/" + group + p.getCompletePath())
                 .distinct()
                 .collect(Collectors.toList());

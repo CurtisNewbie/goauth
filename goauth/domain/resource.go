@@ -196,6 +196,25 @@ var (
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
 
+func ListResourceCandidatesForRole(ec common.ExecContext, roleNo string) ([]ResBrief, error) {
+	if roleNo == "" {
+		return []ResBrief{}, nil
+	}
+
+	var res []ResBrief
+	tx := mysql.GetMySql().
+		Raw(`select r.res_no, r.name from resource r 
+			where not exists (select * from role_resource where role_no = ? and res_no = r.res_no)`, roleNo).
+		Scan(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if res == nil {
+		res = []ResBrief{}
+	}
+	return res, nil
+}
+
 func ListAllResBriefs(ec common.ExecContext) ([]ResBrief, error) {
 	var res []ResBrief
 	tx := mysql.GetMySql().Raw("select res_no, name, name from resource").Scan(&res)
@@ -407,8 +426,21 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 
 	var count int
 	tx = mysql.GetMySql().
-		Raw("select count(*) from path").
-		Scan(&count)
+		Table("path p").
+		Select("count(*)").
+		Joins("left join resource r on p.res_no = r.res_no")
+
+	if req.Pgroup != "" {
+		tx = tx.Where("p.pgroup = ?", req.Pgroup)
+	}
+	if req.Url != "" {
+		tx = tx.Where("p.url like ?", req.Url+"%")
+	}
+	if req.Ptype != "" {
+		tx = tx.Where("p.ptype = ?", req.Ptype)
+	}
+
+	tx = tx.Scan(&count)
 	if tx.Error != nil {
 		return ListPathResp{}, tx.Error
 	}

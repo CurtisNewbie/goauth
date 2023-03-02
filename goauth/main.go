@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/curtisnewbie/goauth/domain"
 	"github.com/curtisnewbie/gocommon/common"
@@ -46,6 +47,11 @@ func main() {
 	server.Get(server.OpenApiPath("/resource/brief/all"),
 		func(c *gin.Context, ec common.ExecContext) (any, error) {
 			return domain.ListAllResBriefs(ec)
+		})
+	server.Get(server.OpenApiPath("/resource/brief/candidates"),
+		func(c *gin.Context, ec common.ExecContext) (any, error) {
+			roleNo := c.Query("roleNo")
+			return domain.ListResourceCandidatesForRole(ec, roleNo)
 		})
 	server.PostJ(server.OpenApiPath("/resource/list"),
 		func(c *gin.Context, ec common.ExecContext, req domain.ListResReq) (any, error) {
@@ -139,14 +145,17 @@ func main() {
 		ec := common.EmptyExecContext()
 		routes := server.GetRecordedServerRoutes()
 
-		for i, u := range routes {
-			routes[i] = "/goauth" + u
+		froutes := []string{}
+		for _, u := range routes {
+			if !strings.HasPrefix(u, "/remote") {
+				froutes = append(froutes, "/goauth"+u)
+			}
 		}
 
 		domain.BatchCreatePathIfNotExist(ec, domain.BatchCreatePathReq{
 			Type:  domain.PT_PROTECTED,
 			Group: "goauth",
-			Urls:  routes,
+			Urls:  froutes,
 		})
 	})
 
