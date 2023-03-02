@@ -140,15 +140,11 @@ type ListRoleResResp struct {
 }
 
 type ListedRoleRes struct {
-	Id         int    // id
-	RoleNo     string // role no
-	ResNo      string // resource no
-	ResName    string // resource name
-	Url        string // url
-	CreateTime time.Time
-	CreateBy   string
-	UpdateTime time.Time
-	UpdateBy   string
+	Id         int       `json:"id"`
+	ResNo      string    `json:"resNo"`
+	ResName    string    `json:"resName"`
+	CreateTime time.Time `json:"createTime"`
+	CreateBy   string    `json:"createBy"`
 }
 
 type RoleInfoReq struct {
@@ -474,9 +470,9 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
 	tx := mysql.GetMySql().
-		Raw(`select rr.*, r.name 'res_name' from role_resource rr 
+		Raw(`select rr.id, rr.res_no, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr 
 			left join resource r on rr.res_no = r.res_no
-			where rr.role_no = ? limit ?, ?`, req.RoleNo, req.Paging.GetOffset(), req.Paging.GetLimit()).
+			where rr.role_no = ? order by rr.id desc limit ?, ?`, req.RoleNo, req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&res)
 
 	if tx.Error != nil {
