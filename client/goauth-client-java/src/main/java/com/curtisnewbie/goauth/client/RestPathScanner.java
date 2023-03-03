@@ -110,14 +110,14 @@ public class RestPathScanner implements ApplicationContextAware {
         }
     }
 
-    public static String extractDescription(Method m) {
+    public static PathDoc extractDoc(Method m) {
         for (Annotation mda : m.getDeclaredAnnotations()) {
             Class<?> typ = mda.annotationType();
             if (PathDoc.class.equals(typ)) {
-                return ((PathDoc) mda).description();
+                return ((PathDoc) mda);
             }
         }
-        return "";
+        return null;
     }
 
     public static void parseRestPath(List<RestPath> restPathList, Class<?> beanClz, Function<String, String> resolvePlaceholders) {
@@ -132,14 +132,16 @@ public class RestPathScanner implements ApplicationContextAware {
         final Method[] methods = beanClz.getDeclaredMethods();
         for (int i = 0; i < methods.length; i++) {
             Method m = methods[i];
-            String description = extractDescription(m);
+            PathDoc pathDoc = extractDoc(m);
+            String description = pathDoc != null ? pathDoc.description() : "";
+            PathType type = pathDoc != null ? pathDoc.type() : PathType.PROTECTED;
 
             for (Annotation mda : m.getDeclaredAnnotations()) {
                 Class<?> typ = mda.annotationType();
                 if (clz2Parser.containsKey(typ)) {
                     final List<ParsedMapping> parsed = clz2Parser.get(typ).parsed(mda);
                     for (ParsedMapping pm : parsed) {
-                        restPathList.add(new RestPath(rootPath, pm.requestPath, description, pm.httpMethod));
+                        restPathList.add(new RestPath(rootPath, pm.requestPath, description, pm.httpMethod, type));
                     }
 
                     break; // normally, a method can only have one mapping
@@ -152,12 +154,24 @@ public class RestPathScanner implements ApplicationContextAware {
      * Parsed REST Path, thread-safe
      */
     @ToString
-    @AllArgsConstructor
     public static class RestPath {
         public final String rootPath;
         public final String requestPath;
         public final String description;
         public final RequestMethod httpMethod;
+        public final PathType pathType;
+
+        public RestPath(String rootPath, String requestPath, String description, RequestMethod httpMethod, PathType pathType) {
+            this.rootPath = rootPath;
+            this.requestPath = requestPath;
+            this.description = description;
+            this.httpMethod = httpMethod;
+            this.pathType = pathType;
+        }
+
+        public RestPath(String rootPath, String requestPath, String description, RequestMethod httpMethod) {
+            this(rootPath, requestPath, description, httpMethod, PathType.PROTECTED);
+        }
 
         public String getCompletePath() {
             String rtp = rootPath != null ? rootPath.trim() : "";

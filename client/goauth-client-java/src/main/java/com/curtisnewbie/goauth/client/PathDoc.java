@@ -13,4 +13,6 @@ import java.lang.annotation.*;
 public @interface PathDoc {
 
     String description() default "";
+
+    PathType type() default PathType.PROTECTED;
 }

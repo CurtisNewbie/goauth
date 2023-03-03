@@ -51,7 +51,7 @@ public class RestPathReporter implements InitializingBean {
                     final AddPathReq ar = new AddPathReq();
                     ar.setUrl("/" + group + p.getCompletePath());
                     ar.setGroup(group);
-                    ar.setType(PathType.PROTECTED);
+                    ar.setType(p.pathType);
                     ar.setDesc(p.description);
                     return ar;
                 })
