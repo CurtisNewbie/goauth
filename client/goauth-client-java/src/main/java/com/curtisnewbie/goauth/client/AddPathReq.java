@@ -10,4 +10,5 @@ public class AddPathReq {
     private PathType type;
     private String url;
     private String group;
+    private String desc;
 }

@@ -29,6 +29,7 @@ func TestAddPath(t *testing.T) {
 		Url:   "/test/url/gclient",
 		Type:  PT_PROTECTED,
 		Group: "goauth-client-java",
+		Desc: "some test path",
 	}
 
 	e := AddPath(context.Background(), req)

@@ -28,6 +28,7 @@ type CreatePathReq struct {
 	Type  PathType `json:"type"`
 	Url   string   `json:"url"`
 	Group string   `json:"group"`
+	Desc  string   `json:"desc"`
 }
 
 type TestResAccessReq struct {

@@ -29,10 +29,10 @@ public class RestPathScannerTest {
 
     @Test
     public void should_get_complete_path() {
-        Assertions.assertEquals("/dummy", new RestPathScanner.RestPath("dummy", "", RequestMethod.GET).getCompletePath());
-        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info", RequestMethod.GET).getCompletePath());
-        Assertions.assertEquals("/info", new RestPathScanner.RestPath("", "/info", RequestMethod.GET).getCompletePath());
-        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info/////", RequestMethod.GET).getCompletePath());
+        Assertions.assertEquals("/dummy", new RestPathScanner.RestPath("dummy", "", "", RequestMethod.GET).getCompletePath());
+        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info", "", RequestMethod.GET).getCompletePath());
+        Assertions.assertEquals("/info", new RestPathScanner.RestPath("", "/info", "", RequestMethod.GET).getCompletePath());
+        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info/////", "", RequestMethod.GET).getCompletePath());
     }
 
     @Component

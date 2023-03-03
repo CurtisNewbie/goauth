@@ -45,33 +45,36 @@ public class RestPathReporter implements InitializingBean {
     }
 
     protected static void reportPaths(List<RestPathScanner.RestPath> restPaths, String group, GoAuthClient goAuthClient) {
-        final List<String> paths = restPaths.stream()
+        final List<AddPathReq> reqs = restPaths.stream()
                 .filter(p -> !p.requestPath.startsWith("/remote"))
-                .map(p -> "/" + group + p.getCompletePath())
-                .distinct()
+                .map(p -> {
+                    final AddPathReq ar = new AddPathReq();
+                    ar.setUrl("/" + group + p.getCompletePath());
+                    ar.setGroup(group);
+                    ar.setType(PathType.PROTECTED);
+                    ar.setDesc(p.description);
+                    return ar;
+                })
                 .collect(Collectors.toList());
-        batchReportPaths(group, paths, PathType.PROTECTED, goAuthClient);
-        goAuthClient.reloadPathCache();
+
+        try {
+            batchReportPaths(reqs, goAuthClient);
+            goAuthClient.reloadPathCache();
+        } catch (Throwable e) {
+            log.error("Failed to report path to goauth, reqs: {}", reqs, e);
+        }
     }
 
-    protected static void batchReportPaths(String group, List<String> urls, PathType type, GoAuthClient goAuthClient) {
-        try {
-            BatchAddPathReq req = new BatchAddPathReq();
-            req.setGroup(group);
-            req.setType(type);
-            req.setUrls(urls);
-
-            final Result<Void> res = goAuthClient.batchAddPath(req);
-            if (!res.isOk()) {
-                log.error("Failed to report path to goauth, group: {}, type: {}, url: {}, error code: {}, error msg: {}",
-                        req.getGroup(), req.getType(), req.getUrls(), res.getErrorCode(), res.getMsg());
-                return;
-            }
-
-            log.info("Reported paths '{}' to goauth", req.getUrls());
-        } catch (Throwable e) {
-            log.error("Failed to report path to goauth, group: {}, type: {}, url: {}", group, type, urls, e);
+    protected static void batchReportPaths(List<AddPathReq> reqList, GoAuthClient goAuthClient) {
+        final BatchAddPathReq req = new BatchAddPathReq();
+        req.setReqs(reqList);
+        final Result<Void> res = goAuthClient.batchAddPath(req);
+        if (!res.isOk()) {
+            log.error("Failed to report path to goauth, reqs: {}, error code: {}, error msg: {}",
+                    reqList, res.getErrorCode(), res.getMsg());
+            return;
         }
+        log.info("Reported {} paths to goauth", reqList.size());
     }
 
     protected static void reportPath(String group, String url, PathType type, GoAuthClient goAuthClient) {

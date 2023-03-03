@@ -145,18 +145,15 @@ func main() {
 		ec := common.EmptyExecContext()
 		routes := server.GetRecordedServerRoutes()
 
-		froutes := []string{}
 		for _, u := range routes {
 			if !strings.HasPrefix(u, "/remote") {
-				froutes = append(froutes, "/goauth"+u)
+				domain.CreatePathIfNotExist(ec, domain.CreatePathReq{
+					Type:  domain.PT_PROTECTED,
+					Group: "goauth",
+					Url:   "/goauth" + u,
+				})
 			}
 		}
-
-		domain.BatchCreatePathIfNotExist(ec, domain.BatchCreatePathReq{
-			Type:  domain.PT_PROTECTED,
-			Group: "goauth",
-			Urls:  froutes,
-		})
 	})
 
 	// bootstrap server

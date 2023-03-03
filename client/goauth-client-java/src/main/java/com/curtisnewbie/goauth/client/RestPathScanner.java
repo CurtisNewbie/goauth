@@ -110,6 +110,16 @@ public class RestPathScanner implements ApplicationContextAware {
         }
     }
 
+    public static String extractDescription(Method m) {
+        for (Annotation mda : m.getDeclaredAnnotations()) {
+            Class<?> typ = mda.annotationType();
+            if (PathDoc.class.equals(typ)) {
+                return ((PathDoc) mda).description();
+            }
+        }
+        return "";
+    }
+
     public static void parseRestPath(List<RestPath> restPathList, Class<?> beanClz, Function<String, String> resolvePlaceholders) {
         String rootPath = "";
         final RequestMapping rootMapping = beanClz.getDeclaredAnnotation(RequestMapping.class);
@@ -122,13 +132,14 @@ public class RestPathScanner implements ApplicationContextAware {
         final Method[] methods = beanClz.getDeclaredMethods();
         for (int i = 0; i < methods.length; i++) {
             Method m = methods[i];
+            String description = extractDescription(m);
 
             for (Annotation mda : m.getDeclaredAnnotations()) {
                 Class<?> typ = mda.annotationType();
                 if (clz2Parser.containsKey(typ)) {
                     final List<ParsedMapping> parsed = clz2Parser.get(typ).parsed(mda);
                     for (ParsedMapping pm : parsed) {
-                        restPathList.add(new RestPath(rootPath, pm.requestPath, pm.httpMethod));
+                        restPathList.add(new RestPath(rootPath, pm.requestPath, description, pm.httpMethod));
                     }
 
                     break; // normally, a method can only have one mapping
@@ -145,6 +156,7 @@ public class RestPathScanner implements ApplicationContextAware {
     public static class RestPath {
         public final String rootPath;
         public final String requestPath;
+        public final String description;
         public final RequestMethod httpMethod;
 
         public String getCompletePath() {

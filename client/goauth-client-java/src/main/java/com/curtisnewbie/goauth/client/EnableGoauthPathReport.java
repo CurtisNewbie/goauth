@@ -9,6 +9,7 @@ import java.lang.annotation.*;
  *
  * @author yongj.zhuang
  */
+@Documented
 @Import({RestPathScanner.class, RestPathReporter.class})
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

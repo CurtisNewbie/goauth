@@ -65,11 +65,13 @@ public class GoAuthClientTest {
 
     @Test
     public void should_batch_add_path() {
-        final BatchAddPathReq req = new BatchAddPathReq();
-        req.setUrls(Arrays.asList("/test/url"));
-        req.setType(PathType.PROTECTED);
-        req.setGroup("goauth-client-java");
-        final Result<Void> result = goAuthClient.batchAddPath(req);
+        final BatchAddPathReq br = new BatchAddPathReq();
+        final AddPathReq ar = new AddPathReq();
+        ar.setUrl("/test/url");
+        ar.setType(PathType.PROTECTED);
+        ar.setGroup("goauth-client-java");
+        br.setReqs(Arrays.asList(ar));
+        final Result<Void> result = goAuthClient.batchAddPath(br);
         result.assertIsOk();
     }
 }

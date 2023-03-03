@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/mysql"
@@ -87,6 +86,7 @@ type WPath struct {
 	Pgroup     string       `json:"pgroup"`
 	PathNo     string       `json:"pathNo"`
 	ResNo      string       `json:"resNo"`
+	Desc       string       `json:"desc"`
 	Url        string       `json:"url"`
 	Ptype      PathType     `json:"ptype"`
 	CreateTime common.ETime `json:"createTime"`
@@ -166,12 +166,11 @@ type CreatePathReq struct {
 	Type  PathType `json:"type" validation:"notEmpty"`
 	Url   string   `json:"url" validation:"notEmpty,maxLen:128"`
 	Group string   `json:"group" validation:"notEmpty,maxLen:20"`
+	Desc  string   `json:"desc" validation:"maxLen:255"`
 }
 
 type BatchCreatePathReq struct {
-	Type  PathType `json:"type" validation:"notEmpty"`
-	Urls  []string `json:"urls"`
-	Group string   `json:"group" validation:"notEmpty,maxLen:20"`
+	Reqs []CreatePathReq `json:"reqs"`
 }
 
 type DeletePathReq struct {
@@ -250,8 +249,8 @@ func ListResources(ec common.ExecContext, req ListResReq) (ListResResp, error) {
 
 func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
 	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) {
-		tx := mysql.GetMySql().Exec(`update path set pgroup = ?, ptype = ? where path_no = ?`, req.Group, req.Type,
-			req.PathNo)
+		tx := mysql.GetMySql().Exec(`update path set pgroup = ?, ptype = ? where path_no = ?`,
+			req.Group, req.Type, req.PathNo)
 		return nil, tx.Error
 	})
 
@@ -324,20 +323,12 @@ func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 }
 
 func BatchCreatePathIfNotExist(ec common.ExecContext, req BatchCreatePathReq) error {
-	if req.Urls == nil {
+	if req.Reqs == nil {
 		return nil
 	}
 
-	for _, u := range req.Urls {
-		if utf8.RuneCountInString(u) > 128 {
-			return common.NewWebErr("URL exceeded maximum length 128")
-		}
-
-		if e := CreatePathIfNotExist(ec, CreatePathReq{
-			Type:  req.Type,
-			Group: req.Group,
-			Url:   u,
-		}); e != nil {
+	for _, r := range req.Reqs {
+		if e := CreatePathIfNotExist(ec, r); e != nil {
 			return e
 		}
 	}
@@ -354,12 +345,12 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 		}
 
 		if id > 0 {
-			// ec.Log.Infof("Path '%s' already exist", req.Url)
 			return nil, nil
 		}
 
 		ep := EPath{
 			Url:      req.Url,
+			Desc:     req.Desc,
 			Ptype:    req.Type,
 			Pgroup:   req.Group,
 			PathNo:   common.GenIdP("path_"),

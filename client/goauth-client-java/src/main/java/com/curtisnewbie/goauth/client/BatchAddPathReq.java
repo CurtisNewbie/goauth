@@ -9,7 +9,5 @@ import java.util.List;
  */
 @Data
 public class BatchAddPathReq {
-    private PathType type;
-    private List<String> urls;
-    private String group;
+    private List<AddPathReq> reqs;
 }

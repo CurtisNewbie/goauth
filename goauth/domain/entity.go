@@ -13,6 +13,7 @@ type EPath struct {
 	Id         int      // id
 	Pgroup     string   // path group
 	PathNo     string   // path no
+	Desc       string   // description
 	ResNo      string   // resource no
 	Url        string   // url
 	Ptype      PathType // path type: PROTECTED, PUBLIC

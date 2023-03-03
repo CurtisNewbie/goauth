@@ -5,7 +5,7 @@ app.name: "goauth"
 mysql:
   enabled: true 
   user: root
-  password: 123456
+#  password: 123456
   database: fileServer
   host: localhost
   port: 3306
@@ -28,8 +28,8 @@ consul:
   registerName: goauth
   consulAddress: localhost:8500
   healthCheckUrl: /health
-  healthCheckInterval: 5s
-  healthCheckTimeout: 5s
+  healthCheckInterval: 120s
+  healthCheckTimeout: 120s
   healthCheckFailedDeregisterAfter: 5s
 
 rabbitmq:
@@ -47,5 +47,5 @@ tracing.propagation.keys:
   - role
   - services
 
-logging.rolling.file:
-  "goauth.log"
+# logging.rolling.file:
+#   "goauth.log"

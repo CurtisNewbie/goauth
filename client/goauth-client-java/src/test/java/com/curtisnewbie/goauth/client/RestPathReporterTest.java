@@ -29,8 +29,8 @@ public class RestPathReporterTest {
     @Test
     public void should_report_rest_path() {
         List<RestPathScanner.RestPath> restPaths = Arrays.asList(
-                new RestPathScanner.RestPath("dummy", "", RequestMethod.GET),
-                new RestPathScanner.RestPath("dummy", "info", RequestMethod.GET)
+                new RestPathScanner.RestPath("dummy", "", "dummy", RequestMethod.GET),
+                new RestPathScanner.RestPath("dummy", "info", "info", RequestMethod.GET)
         );
 
         RestPathReporter.reportPaths(restPaths, "test", goAuthClient);
