@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS path (
   `pgroup` varchar(20) NOT NULL DEFAULT '' COMMENT 'path group',
   `path_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'path no',
   `desc` varchar(255) NOT NULL DEFAULT '' COMMENT 'description',
-  `res_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource no for the path',
+  `res_code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code for the path',
   `url` varchar(128) NOT NULL DEFAULT '' COMMENT 'path url',
   `ptype` varchar(10) NOT NULL DEFAULT '' COMMENT 'path type: PROTECTED, PUBLIC',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS path (
 
 CREATE TABLE IF NOT EXISTS resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
-  `res_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource no',
   `code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code',
   `name` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource name',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
@@ -26,14 +25,13 @@ CREATE TABLE IF NOT EXISTS resource (
   `update_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who updated this record',
   `is_del` tinyint NOT NULL DEFAULT '0' COMMENT '0-normal, 1-deleted',
   PRIMARY KEY (`id`),
-  KEY `res_no` (`res_no`), 
   KEY `code` (`code`)
 ) ENGINE=InnoDB COMMENT='Resources';
 
 CREATE TABLE IF NOT EXISTS role_resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `role_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'role no',
-  `res_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource no',
+  `res_code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
   `create_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who created this record',
   `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'when the record is updated',
@@ -56,10 +54,5 @@ CREATE TABLE IF NOT EXISTS role (
   KEY `role_no` (`role_no`)
 ) ENGINE=InnoDB COMMENT='Roles';
 
--- delete from role;
--- delete from path;
--- delete from resource;
--- delete from role_resource;
-
 -- default one for administrator, with this role, all paths can be accessed
-INSERT INTO role(role_no, name) VALUES ('role_554107924873216177918', 'Administrator');
+INSERT INTO role(role_no, name) VALUES ('role_554107924873216177918', 'Super Administrator');

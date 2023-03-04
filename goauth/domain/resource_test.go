@@ -92,7 +92,7 @@ func TestBindPathRes(t *testing.T) {
 
 	req := BindPathResReq{
 		PathNo: "path_555326806016000208429",
-		ResNo:  "res_555323073019904208429",
+		ResCode:  "res_555323073019904208429",
 	}
 
 	e := BindPathRes(common.EmptyExecContext(), req)
@@ -132,7 +132,7 @@ func TestAddResToRole(t *testing.T) {
 
 	req := AddRoleResReq{
 		RoleNo: "role_555329954676736208429",
-		ResNo:  "res_555323073019904208429",
+		ResCode:  "res_555323073019904208429",
 	}
 
 	e := AddResToRoleIfNotExist(common.EmptyExecContext(), req)
@@ -146,7 +146,7 @@ func TestRemoveResFromRole(t *testing.T) {
 
 	req := RemoveRoleResReq{
 		RoleNo: "role_555329954676736208429",
-		ResNo:  "res_555323073019904208429",
+		ResCode:  "res_555323073019904208429",
 	}
 
 	e := RemoveResFromRole(common.EmptyExecContext(), req)

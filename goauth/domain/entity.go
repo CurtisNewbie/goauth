@@ -14,7 +14,7 @@ type EPath struct {
 	Pgroup     string   // path group
 	PathNo     string   // path no
 	Desc       string   // description
-	ResNo      string   // resource no
+	ResCode    string   // resource code 
 	Url        string   // url
 	Ptype      PathType // path type: PROTECTED, PUBLIC
 	CreateTime common.ETime
@@ -25,7 +25,6 @@ type EPath struct {
 
 type ERes struct {
 	Id         int    // id
-	ResNo      string // resource no
 	Code       string // resource code
 	Name       string // resource name
 	CreateTime common.ETime
@@ -37,7 +36,7 @@ type ERes struct {
 type ERoleRes struct {
 	Id         int    // id
 	RoleNo     string // role no
-	ResNo      string // resource no
+	ResCode    string // resource code 
 	CreateTime common.ETime
 	CreateBy   string
 	UpdateTime common.ETime

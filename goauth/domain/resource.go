@@ -33,18 +33,17 @@ type WRole struct {
 }
 
 type CachedUrlRes struct {
-	Id     int      // id
-	Pgroup string   // path group
-	PathNo string   // path no
-	ResNo  string   // resource no
-	Url    string   // url
-	Ptype  PathType // path type: PROTECTED, PUBLIC
+	Id      int      // id
+	Pgroup  string   // path group
+	PathNo  string   // path no
+	ResCode string   // resource code
+	Url     string   // url
+	Ptype   PathType // path type: PROTECTED, PUBLIC
 }
 
 type ResBrief struct {
-	ResNo string `json:"resNo"`
-	Name  string `json:"name"`
-	Code  string `json:"code"`
+	Code string `json:"code"`
+	Name string `json:"name"`
 }
 
 type AddRoleReq struct {
@@ -86,7 +85,7 @@ type WPath struct {
 	ResName    string       `json:"resName"`
 	Pgroup     string       `json:"pgroup"`
 	PathNo     string       `json:"pathNo"`
-	ResNo      string       `json:"resNo"`
+	ResCode    string       `json:"resCode"`
 	Desc       string       `json:"desc"`
 	Url        string       `json:"url"`
 	Ptype      PathType     `json:"ptype"`
@@ -98,7 +97,6 @@ type WPath struct {
 
 type WRes struct {
 	Id         int          `json:"id"`
-	ResNo      string       `json:"resNo"`
 	Code       string       `json:"code"`
 	Name       string       `json:"name"`
 	CreateTime common.ETime `json:"createTime"`
@@ -113,8 +111,8 @@ type ListPathResp struct {
 }
 
 type BindPathResReq struct {
-	PathNo string `json:"pathNo" validation:"notEmpty"`
-	ResNo  string `json:"resNo" validation:"notEmpty"`
+	PathNo  string `json:"pathNo" validation:"notEmpty"`
+	ResCode string `json:"resCode" validation:"notEmpty"`
 }
 
 type UnbindPathResReq struct {
@@ -127,13 +125,13 @@ type ListRoleResReq struct {
 }
 
 type RemoveRoleResReq struct {
-	RoleNo string `json:"roleNo" validation:"notEmpty"`
-	ResNo  string `json:"resNo" validation:"notEmpty"`
+	RoleNo  string `json:"roleNo" validation:"notEmpty"`
+	ResCode string `json:"resCode" validation:"notEmpty"`
 }
 
 type AddRoleResReq struct {
-	RoleNo string `json:"roleNo" validation:"notEmpty"`
-	ResNo  string `json:"resNo" validation:"notEmpty"`
+	RoleNo  string `json:"roleNo" validation:"notEmpty"`
+	ResCode string `json:"resCode" validation:"notEmpty"`
 }
 
 type ListRoleResResp struct {
@@ -143,7 +141,7 @@ type ListRoleResResp struct {
 
 type ListedRoleRes struct {
 	Id         int       `json:"id"`
-	ResNo      string    `json:"resNo"`
+	ResCode    string    `json:"resCode"`
 	ResName    string    `json:"resName"`
 	CreateTime time.Time `json:"createTime"`
 	CreateBy   string    `json:"createBy"`
@@ -190,11 +188,11 @@ type ListResResp struct {
 
 type CreateResReq struct {
 	Name string `json:"name" validation:"notEmpty,maxLen:32"`
-	Code string `json:"code" validation:"maxLen:32"`
+	Code string `json:"code" validation:"notEmpty,maxLen:32"`
 }
 
 type DeleteResourceReq struct {
-	ResNo string `json:"resNo" validation:"notEmpty"`
+	ResCode string `json:"resCode" validation:"notEmpty"`
 }
 
 var (
@@ -206,13 +204,13 @@ func DeleteResource(ec common.ExecContext, req DeleteResourceReq) error {
 
 	_, e := redis.RLockRun(ec, "goauth:resource:global", func() (any, error) { // global lock for resources
 		return nil, mysql.GetMySql().Transaction(func(tx *gorm.DB) error {
-			if t := tx.Exec(`delete from resource where res_no = ?`, req.ResNo); t != nil {
+			if t := tx.Exec(`delete from resource where code = ?`, req.ResCode); t != nil {
 				return t.Error
 			}
-			if t := tx.Exec(`delete from role_resource where res_no = ?`, req.ResNo); t != nil {
+			if t := tx.Exec(`delete from role_resource where res_code = ?`, req.ResCode); t != nil {
 				return t.Error
 			}
-			return tx.Exec(`update path set res_no = '' where res_no = ?`, req.ResNo).Error
+			return tx.Exec(`update path set res_code = '' where res_code = ?`, req.ResCode).Error
 		})
 	})
 
@@ -241,8 +239,8 @@ func ListResourceCandidatesForRole(ec common.ExecContext, roleNo string) ([]ResB
 
 	var res []ResBrief
 	tx := mysql.GetMySql().
-		Raw(`select r.res_no, r.name, r.code from resource r 
-			where not exists (select * from role_resource where role_no = ? and res_no = r.res_no)`, roleNo).
+		Raw(`select r.name, r.code from resource r 
+			where not exists (select * from role_resource where role_no = ? and res_code = r.code)`, roleNo).
 		Scan(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -261,7 +259,8 @@ func ListAllResBriefsOfRole(ec common.ExecContext, roleNo string) ([]ResBrief, e
 	}
 
 	tx := mysql.GetMySql().
-		Raw(`select r.res_no, r.name, r.code from role_resource rr left join resource r
+		Raw(`select r.name, r.code from role_resource rr left join resource r
+			on r.code = rr.res_code
 			where rr.role_no = ?`, roleNo).
 		Scan(&res)
 	if tx.Error != nil {
@@ -275,7 +274,7 @@ func ListAllResBriefsOfRole(ec common.ExecContext, roleNo string) ([]ResBrief, e
 
 func ListAllResBriefs(ec common.ExecContext) ([]ResBrief, error) {
 	var res []ResBrief
-	tx := mysql.GetMySql().Raw("select res_no, name, code from resource").Scan(&res)
+	tx := mysql.GetMySql().Raw("select name, code from resource").Scan(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -366,7 +365,6 @@ func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 		}
 
 		res := ERes{
-			ResNo:    common.GenIdP("res_"),
 			Name:     req.Name,
 			Code:     req.Code,
 			CreateBy: ec.User.Username,
@@ -436,7 +434,7 @@ func DeletePath(ec common.ExecContext, req DeletePathReq) error {
 
 func UnbindPathRes(ec common.ExecContext, req UnbindPathResReq) error {
 	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) { // lock for path
-		tx := mysql.GetMySql().Exec(`update path set res_no = '' where path_no = ?`, req.PathNo)
+		tx := mysql.GetMySql().Exec(`update path set res_code = '' where path_no = ?`, req.PathNo)
 		return nil, tx.Error
 	})
 
@@ -457,7 +455,7 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 
 			// check if resource exist
 			var resId int
-			tx := mysql.GetMySql().Raw(`select id from resource where res_no = ?`, req.ResNo).Scan(&resId)
+			tx := mysql.GetMySql().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
@@ -466,7 +464,7 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 			}
 
 			// bind resource to path
-			return nil, mysql.GetMySql().Exec(`update path set res_no = ? where path_no = ?`, req.ResNo, req.PathNo).Error
+			return nil, mysql.GetMySql().Exec(`update path set res_code = ? where path_no = ?`, req.ResCode, req.PathNo).Error
 		})
 		return nil, ex
 	})
@@ -487,7 +485,7 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	tx := mysql.GetMySql().
 		Table("path p").
 		Select("p.*, r.name res_name").
-		Joins("left join resource r on p.res_no = r.res_no").
+		Joins("left join resource r on p.res_code = r.code").
 		Order("id desc")
 
 	if req.Pgroup != "" {
@@ -511,7 +509,7 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	tx = mysql.GetMySql().
 		Table("path p").
 		Select("count(*)").
-		Joins("left join resource r on p.res_no = r.res_no")
+		Joins("left join resource r on p.res_code = r.code")
 
 	if req.Pgroup != "" {
 		tx = tx.Where("p.pgroup = ?", req.Pgroup)
@@ -549,7 +547,7 @@ func AddRole(ec common.ExecContext, req AddRoleReq) error {
 
 func RemoveResFromRole(ec common.ExecContext, req RemoveRoleResReq) error {
 	_, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) {
-		tx := mysql.GetMySql().Exec(`delete from role_resource where role_no = ? and res_no = ?`, req.RoleNo, req.ResNo)
+		tx := mysql.GetMySql().Exec(`delete from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode)
 		return nil, tx.Error
 	})
 	return e
@@ -562,7 +560,7 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 		_, ex := redis.RLockRun(ec, "goauth:resource:global", func() (any, error) { // global lock for resources
 			// check if resource exist
 			var resId int
-			tx := mysql.GetMySql().Raw(`select id from resource where res_no = ?`, req.ResNo).Scan(&resId)
+			tx := mysql.GetMySql().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
@@ -572,7 +570,7 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 
 			// check if role-resource relation exists
 			var id int
-			tx = mysql.GetMySql().Raw(`select id from role_resource where role_no = ? and res_no = ?`, req.RoleNo, req.ResNo).Scan(&id)
+			tx = mysql.GetMySql().Raw(`select id from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode).Scan(&id)
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
@@ -583,7 +581,7 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 			// create role-resource relation
 			rr := ERoleRes{
 				RoleNo:   req.RoleNo,
-				ResNo:    req.ResNo,
+				ResCode:  req.ResCode,
 				CreateBy: ec.User.Username,
 				UpdateBy: ec.User.Username,
 			}
@@ -601,8 +599,8 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
 	tx := mysql.GetMySql().
-		Raw(`select rr.id, rr.res_no, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr 
-			left join resource r on rr.res_no = r.res_no
+		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr 
+			left join resource r on rr.res_code = r.code
 			where rr.role_no = ? order by rr.id desc limit ?, ?`, req.RoleNo, req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&res)
 
@@ -617,7 +615,7 @@ func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, er
 	var count int
 	tx = mysql.GetMySql().
 		Raw(`select count(*) from role_resource rr 
-			left join resource r on rr.res_no = r.res_no
+			left join resource r on rr.res_code = r.code
 			where rr.role_no = ?`, req.RoleNo).
 		Scan(&count)
 
@@ -693,7 +691,7 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 	}
 
 	// the requiredRes resources no
-	requiredRes := cur.ResNo
+	requiredRes := cur.ResCode
 	if requiredRes == "" {
 		ec.Log.Infof("Rejected '%s', path doesn't have any resource bound yet", url)
 		return forbidden, nil
@@ -713,8 +711,8 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 	return permitted, nil
 }
 
-func checkRoleRes(ec common.ExecContext, roleNo string, resNo string) (bool, error) {
-	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resNo))
+func checkRoleRes(ec common.ExecContext, roleNo string, resCode string) (bool, error) {
+	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resCode))
 	if e != nil {
 		return false, e
 	}
@@ -739,7 +737,7 @@ func LoadRoleResCache(ec common.ExecContext) error {
 			}
 
 			for _, rr := range roleResList {
-				roleResCache.Put(ec, fmt.Sprintf("role:%s:res:%s", rr.RoleNo, rr.ResNo), "1")
+				roleResCache.Put(ec, fmt.Sprintf("role:%s:res:%s", rr.RoleNo, rr.ResCode), "1")
 			}
 		}
 		return nil, nil
@@ -829,7 +827,7 @@ func prepCachedUrlResStr(ec common.ExecContext, epath EPath) (string, error) {
 		Id:     epath.Id,
 		Pgroup: epath.Pgroup,
 		PathNo: epath.PathNo,
-		ResNo:  epath.ResNo,
+		ResCode:  epath.ResCode,
 		Url:    epath.Url,
 		Ptype:  epath.Ptype,
 	}
