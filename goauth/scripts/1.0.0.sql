@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS path (
 CREATE TABLE IF NOT EXISTS resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `res_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource no',
+  `code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code',
   `name` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource name',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
   `create_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who created this record',
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS resource (
   `update_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who updated this record',
   `is_del` tinyint NOT NULL DEFAULT '0' COMMENT '0-normal, 1-deleted',
   PRIMARY KEY (`id`),
-  KEY `res_no` (`res_no`)
+  KEY `res_no` (`res_no`), 
+  KEY `code` (`code`)
 ) ENGINE=InnoDB COMMENT='Resources';
 
 CREATE TABLE IF NOT EXISTS role_resource (

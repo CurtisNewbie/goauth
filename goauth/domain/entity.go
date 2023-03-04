@@ -26,6 +26,7 @@ type EPath struct {
 type ERes struct {
 	Id         int    // id
 	ResNo      string // resource no
+	Code       string // resource code
 	Name       string // resource name
 	CreateTime common.ETime
 	CreateBy   string
