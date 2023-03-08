@@ -74,6 +74,7 @@ type RoleBrief struct {
 }
 
 type ListPathReq struct {
+	ResCode  string        `json:"resCode"`
 	Pgroup string        `json:"pgroup"`
 	Url    string        `json:"url"`
 	Ptype  PathType      `json:"ptype"`
@@ -491,6 +492,9 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	if req.Pgroup != "" {
 		tx = tx.Where("p.pgroup = ?", req.Pgroup)
 	}
+	if req.ResCode != "" {
+		tx = tx.Where("p.res_code = ?", req.ResCode)
+	}
 	if req.Url != "" {
 		tx = tx.Where("p.url like ?", "%"+req.Url+"%")
 	}
@@ -513,6 +517,9 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 
 	if req.Pgroup != "" {
 		tx = tx.Where("p.pgroup = ?", req.Pgroup)
+	}
+	if req.ResCode != "" {
+		tx = tx.Where("p.res_code = ?", req.ResCode)
 	}
 	if req.Url != "" {
 		tx = tx.Where("p.url like ?", req.Url+"%")
@@ -824,12 +831,12 @@ func LoadPathResCache(ec common.ExecContext) error {
 func prepCachedUrlResStr(ec common.ExecContext, epath EPath) (string, error) {
 	url := epath.Url
 	cur := CachedUrlRes{
-		Id:     epath.Id,
-		Pgroup: epath.Pgroup,
-		PathNo: epath.PathNo,
-		ResCode:  epath.ResCode,
-		Url:    epath.Url,
-		Ptype:  epath.Ptype,
+		Id:      epath.Id,
+		Pgroup:  epath.Pgroup,
+		PathNo:  epath.PathNo,
+		ResCode: epath.ResCode,
+		Url:     epath.Url,
+		Ptype:   epath.Ptype,
 	}
 
 	j, e := json.Marshal(cur)
