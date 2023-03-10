@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,11 +76,11 @@ type RoleBrief struct {
 }
 
 type ListPathReq struct {
-	ResCode  string        `json:"resCode"`
-	Pgroup string        `json:"pgroup"`
-	Url    string        `json:"url"`
-	Ptype  PathType      `json:"ptype"`
-	Paging common.Paging `json:"pagingVo"`
+	ResCode string        `json:"resCode"`
+	Pgroup  string        `json:"pgroup"`
+	Url     string        `json:"url"`
+	Ptype   PathType      `json:"ptype"`
+	Paging  common.Paging `json:"pagingVo"`
 }
 
 type WPath struct {
@@ -394,7 +396,15 @@ func BatchCreatePathIfNotExist(ec common.ExecContext, req BatchCreatePathReq) er
 	return nil
 }
 
+func genPathNo(group string, url string) string {
+	cksum := md5.Sum([]byte(group + url))
+	return "path_" + base64.StdEncoding.EncodeToString(cksum[:])
+}
+
 func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
+	req.Url = strings.TrimSpace(req.Url)
+	req.Group = strings.TrimSpace(req.Group)
+
 	_, e := redis.RLockRun(ec, "goauth:path:url"+req.Url, func() (any, error) { // lock for new path's url
 
 		var id int
@@ -407,12 +417,13 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			return nil, nil
 		}
 
+		pathNo := genPathNo(req.Group, req.Url)
 		ep := EPath{
 			Url:      req.Url,
 			Desc:     req.Desc,
 			Ptype:    req.Type,
 			Pgroup:   req.Group,
-			PathNo:   common.GenIdP("path_"),
+			PathNo:   pathNo,
 			CreateBy: ec.User.Username,
 			UpdateBy: ec.User.Username,
 		}

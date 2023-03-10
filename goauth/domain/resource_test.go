@@ -141,6 +141,15 @@ func TestAddResToRole(t *testing.T) {
 	}
 }
 
+func TestGenPathNo(t *testing.T) {
+	pathNo := genPathNo("test", "/common/path/is/that/okay/if/i/amy/very")
+	if pathNo == "" {
+		t.Error("pathNo is empty")
+		return
+	}
+	t.Log(pathNo)
+}
+
 func TestRemoveResFromRole(t *testing.T) {
 	before(t)
 
