@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS path (
   `pgroup` varchar(20) NOT NULL DEFAULT '' COMMENT 'path group',
   `path_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'path no',
   `desc` varchar(255) NOT NULL DEFAULT '' COMMENT 'description',
-  `res_code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code for the path',
   `url` varchar(128) NOT NULL DEFAULT '' COMMENT 'path url',
   `ptype` varchar(10) NOT NULL DEFAULT '' COMMENT 'path type: PROTECTED, PUBLIC',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
@@ -14,6 +13,19 @@ CREATE TABLE IF NOT EXISTS path (
   PRIMARY KEY (`id`),
   KEY `url` (`url`)
 ) ENGINE=InnoDB COMMENT='Paths';
+
+CREATE TABLE IF NOT EXISTS path_resource (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `path_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'path no',
+  `res_code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code',
+  `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
+  `create_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who created this record',
+  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'when the record is updated',
+  `update_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who updated this record',
+  `is_del` tinyint NOT NULL DEFAULT '0' COMMENT '0-normal, 1-deleted',
+  PRIMARY KEY (`id`),
+  KEY (`path_no`, `res_code`)
+) ENGINE=InnoDB COMMENT='Path Resource';
 
 CREATE TABLE IF NOT EXISTS resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',

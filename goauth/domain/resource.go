@@ -20,9 +20,72 @@ var (
 	forbidden = TestResAccessResp{Valid: false}
 )
 
+type PathType string
+
 const (
+	// default roleno for admin
 	DEFAULT_ADMIN_ROLE_NO = "role_554107924873216177918"
+
+	PT_PROTECTED PathType = "PROTECTED"
+	PT_PUBLIC    PathType = "PUBLIC"
 )
+
+type EPathRes struct {
+	Id         int      // id
+	Pgroup     string   // path group
+	PathNo     string   // path no
+	ResCode    string   // resource code
+	Desc       string   // description
+	Url        string   // url
+	Ptype      PathType // path type: PROTECTED, PUBLIC
+	CreateTime common.ETime
+	CreateBy   string
+	UpdateTime common.ETime
+	UpdateBy   string
+}
+
+type EPath struct {
+	Id         int      // id
+	Pgroup     string   // path group
+	PathNo     string   // path no
+	Desc       string   // description
+	Url        string   // url
+	Ptype      PathType // path type: PROTECTED, PUBLIC
+	CreateTime common.ETime
+	CreateBy   string
+	UpdateTime common.ETime
+	UpdateBy   string
+}
+
+type ERes struct {
+	Id         int    // id
+	Code       string // resource code
+	Name       string // resource name
+	CreateTime common.ETime
+	CreateBy   string
+	UpdateTime common.ETime
+	UpdateBy   string
+}
+
+type ERoleRes struct {
+	Id         int    // id
+	RoleNo     string // role no
+	ResCode    string // resource code
+	CreateTime common.ETime
+	CreateBy   string
+	UpdateTime common.ETime
+	UpdateBy   string
+}
+
+type ERole struct {
+	Id         int
+	RoleNo     string
+	Name       string
+	CreateTime common.ETime
+	CreateBy   string
+	UpdateTime common.ETime
+	UpdateBy   string
+}
 
 type WRole struct {
 	Id         int          `json:"id"`
@@ -213,7 +276,7 @@ func DeleteResource(ec common.ExecContext, req DeleteResourceReq) error {
 			if t := tx.Exec(`delete from role_resource where res_code = ?`, req.ResCode); t != nil {
 				return t.Error
 			}
-			return tx.Exec(`update path set res_code = '' where res_code = ?`, req.ResCode).Error
+			return tx.Exec(`delete from path_resource where res_code = ?`, req.ResCode).Error
 		})
 	})
 
@@ -318,7 +381,7 @@ func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
 	if e == nil {
 		go func(ec common.ExecContext, pathNo string) {
 			ec.Log.Infof("Refreshing path cache, pathNo: %s", pathNo)
-			ep, e := findPath(pathNo)
+			ep, e := findPathRes(pathNo)
 			if e != nil {
 				ec.Log.Errorf("Failed to reload path cache, pathNo: %s, %v", pathNo, e)
 				return
@@ -438,15 +501,23 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 
 func DeletePath(ec common.ExecContext, req DeletePathReq) error {
 	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) { // lock for path
-		tx := mysql.GetMySql().Exec(`delete from path where path_no = ?`, req.PathNo)
-		return nil, tx.Error
+		er := mysql.GetMySql().Transaction(func(tx *gorm.DB) error {
+			tx = tx.Exec(`delete from path where path_no = ?`, req.PathNo)
+			if tx.Error != nil {
+				return tx.Error
+			}
+
+			return tx.Exec(`delete from path_resource where path_no = ?`, req.PathNo).Error
+		})
+
+		return nil, er
 	})
 	return e
 }
 
 func UnbindPathRes(ec common.ExecContext, req UnbindPathResReq) error {
 	_, e := redis.RLockRun(ec, "goauth:path:"+req.PathNo, func() (any, error) { // lock for path
-		tx := mysql.GetMySql().Exec(`update path set res_code = '' where path_no = ?`, req.PathNo)
+		tx := mysql.GetMySql().Exec(`delete from path_resource where path_no = ?`, req.PathNo)
 		return nil, tx.Error
 	})
 
@@ -475,8 +546,15 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 				return nil, common.NewWebErr("Resource not found")
 			}
 
+			// check if the path and resource are already bound
+			var prid int
+			tx = mysql.GetMySql().Raw(`select id from path_resource where path_no = ?, res_code = ?`, req.PathNo, req.ResCode).Scan(&prid)
+			if tx.Error != nil || prid > 0 {
+				return nil, tx.Error
+			}
+
 			// bind resource to path
-			return nil, mysql.GetMySql().Exec(`update path set res_code = ? where path_no = ?`, req.ResCode, req.PathNo).Error
+			return nil, mysql.GetMySql().Exec(`insert into path_resource (path_no, res_code) values (?, ?)`, req.PathNo, req.ResCode).Error
 		})
 		return nil, ex
 	})
@@ -813,8 +891,10 @@ func LoadPathResCache(ec common.ExecContext) error {
 
 		// ec.Log.Info("Loading path resource cache")
 
-		var paths []EPath
-		tx := mysql.GetMySql().Raw("select * from path").Scan(&paths)
+		var paths []EPathRes
+		tx := mysql.GetMySql().
+			Raw("select p.*, pr.res_code from path p left join path_resource pr on p.path_no = pr.path_no").
+			Scan(&paths)
 		if tx.Error != nil {
 			return nil, tx.Error
 		}
@@ -839,7 +919,7 @@ func LoadPathResCache(ec common.ExecContext) error {
 	return e
 }
 
-func prepCachedUrlResStr(ec common.ExecContext, epath EPath) (string, error) {
+func prepCachedUrlResStr(ec common.ExecContext, epath EPathRes) (string, error) {
 	url := epath.Url
 	cur := CachedUrlRes{
 		Id:      epath.Id,
@@ -885,9 +965,11 @@ func preprocessUrl(url string) string {
 	return url
 }
 
-func findPath(pathNo string) (EPath, error) {
-	var ep EPath
-	tx := mysql.GetMySql().Raw("select * from path where path_no = ?", pathNo).Scan(&ep)
+func findPathRes(pathNo string) (EPathRes, error) {
+	var ep EPathRes
+	tx := mysql.GetMySql().
+		Raw("select p.*, pr.res_no from path p left join path_resource pr on p.path_no = pr.path_no where path_no = ?", pathNo).
+		Scan(&ep)
 	if tx.Error != nil {
 		return ep, tx.Error
 	}
