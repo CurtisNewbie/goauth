@@ -465,7 +465,7 @@ func genPathNo(group string, url string) string {
 }
 
 func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
-	req.Url = strings.TrimSpace(req.Url)
+	req.Url = preprocessUrl(req.Url)
 	req.Group = strings.TrimSpace(req.Group)
 
 	_, e := redis.RLockRun(ec, "goauth:path:url"+req.Url, func() (any, error) { // lock for new path's url
@@ -953,16 +953,20 @@ func preprocessUrl(url string) string {
 	}
 
 	// never ends with '/'
-	if ru[l-1] == '/' {
-		ru = ru[0 : l-1]
-		url = string(ru)
+	if ru[l-1] == '/' && l > 1 {
+		lj := l - 1
+		for lj > 1 && ru[lj-1] == '/' {
+			lj -= 1
+		}
+
+		ru = ru[0:lj]
 	}
 
 	// always start with '/'
 	if ru[0] != '/' {
-		url = "/" + url
+		return "/" + string(ru) 
 	}
-	return url
+	return string(ru) 
 }
 
 func findPathRes(pathNo string) (EPathRes, error) {
