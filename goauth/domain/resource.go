@@ -379,28 +379,32 @@ func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
 	})
 
 	if e == nil {
-		go func(ec common.ExecContext, pathNo string) {
-			ec.Log.Infof("Refreshing path cache, pathNo: %s", pathNo)
-			ep, e := findPathRes(pathNo)
-			if e != nil {
-				ec.Log.Errorf("Failed to reload path cache, pathNo: %s, %v", pathNo, e)
-				return
-			}
-
-			ep.Url = preprocessUrl(ep.Url)
-			cachedStr, e := prepCachedUrlResStr(ec, ep)
-			if e != nil {
-				ec.Log.Errorf("Failed to prepare cached url resource, pathNo: %s, %v", pathNo, e)
-				return
-			}
-
-			if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
-				ec.Log.Errorf("Failed to save cached url resource, pathNo: %s, %v", pathNo, e)
-				return
-			}
-		}(ec, req.PathNo)
+		loadOnePathResCacheAsync(ec, req.PathNo)
 	}
 	return e
+}
+
+func loadOnePathResCacheAsync(ec common.ExecContext, pathNo string) {
+	go func(ec common.ExecContext, pathNo string) {
+		ec.Log.Infof("Refreshing path cache, pathNo: %s", pathNo)
+		ep, e := findPathRes(pathNo)
+		if e != nil {
+			ec.Log.Errorf("Failed to reload path cache, pathNo: %s, %v", pathNo, e)
+			return
+		}
+
+		ep.Url = preprocessUrl(ep.Url)
+		cachedStr, e := prepCachedUrlResStr(ec, ep)
+		if e != nil {
+			ec.Log.Errorf("Failed to prepare cached url resource, pathNo: %s, %v", pathNo, e)
+			return
+		}
+
+		if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
+			ec.Log.Errorf("Failed to save cached url resource, pathNo: %s, %v", pathNo, e)
+			return
+		}
+	}(ec, pathNo)
 }
 
 func GetRoleInfo(ec common.ExecContext, req RoleInfoReq) (RoleInfoResp, error) {
@@ -548,7 +552,7 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 
 			// check if the path and resource are already bound
 			var prid int
-			tx = mysql.GetMySql().Raw(`select id from path_resource where path_no = ?, res_code = ?`, req.PathNo, req.ResCode).Scan(&prid)
+			tx = mysql.GetMySql().Raw(`select id from path_resource where path_no = ? and res_code = ?`, req.PathNo, req.ResCode).Scan(&prid)
 			if tx.Error != nil || prid > 0 {
 				return nil, tx.Error
 			}
@@ -559,13 +563,9 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 		return nil, ex
 	})
 
-	if e != nil {
+	if e == nil {
 		// asynchronously reload the cache of paths and resources
-		go func() {
-			if e := LoadPathResCache(ec); e != nil {
-				ec.Log.Errorf("Failed to load path resource cache, %v", e)
-			}
-		}()
+		loadOnePathResCacheAsync(ec, req.PathNo)
 	}
 	return e
 }
@@ -574,15 +574,16 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	var paths []WPath
 	tx := mysql.GetMySql().
 		Table("path p").
-		Select("p.*, r.name res_name").
-		Joins("left join resource r on p.res_code = r.code").
+		Select("p.*, pr.res_code ,r.name res_name").
+		Joins("left join path_resource pr on p.path_no = pr.path_no").
+		Joins("left join resource r on pr.res_code = r.code").
 		Order("id desc")
 
 	if req.Pgroup != "" {
 		tx = tx.Where("p.pgroup = ?", req.Pgroup)
 	}
 	if req.ResCode != "" {
-		tx = tx.Where("p.res_code = ?", req.ResCode)
+		tx = tx.Where("pr.res_code = ?", req.ResCode)
 	}
 	if req.Url != "" {
 		tx = tx.Where("p.url like ?", "%"+req.Url+"%")
@@ -602,13 +603,14 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	tx = mysql.GetMySql().
 		Table("path p").
 		Select("count(*)").
-		Joins("left join resource r on p.res_code = r.code")
+		Joins("left join path_resource pr on p.path_no = pr.path_no").
+		Joins("left join resource r on pr.res_code = r.code")
 
 	if req.Pgroup != "" {
 		tx = tx.Where("p.pgroup = ?", req.Pgroup)
 	}
 	if req.ResCode != "" {
-		tx = tx.Where("p.res_code = ?", req.ResCode)
+		tx = tx.Where("pr.res_code = ?", req.ResCode)
 	}
 	if req.Url != "" {
 		tx = tx.Where("p.url like ?", req.Url+"%")
@@ -964,9 +966,9 @@ func preprocessUrl(url string) string {
 
 	// always start with '/'
 	if ru[0] != '/' {
-		return "/" + string(ru) 
+		return "/" + string(ru)
 	}
-	return string(ru) 
+	return string(ru)
 }
 
 func findPathRes(pathNo string) (EPathRes, error) {
