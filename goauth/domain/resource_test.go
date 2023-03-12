@@ -20,6 +20,19 @@ func before(t *testing.T) {
 	}
 }
 
+func TestGenResourceScript(t *testing.T) {
+	before(t)
+
+	script, er := GenResourceScript(common.EmptyExecContext(), GenResScriptReq{ResCodes: []string{"basic-user", "manage-users"}})
+	if er != nil {
+		t.Fatal(er)
+	}
+	if script == "" {
+		t.Fatal("Script is empty")
+	}
+	t.Log(script)
+}
+
 func TestUpdatePath(t *testing.T) {
 	before(t)
 

@@ -217,6 +217,10 @@ type RoleInfoReq struct {
 	RoleNo string `json:"roleNo" validation:"notEmpty"`
 }
 
+type GenResScriptReq struct {
+	ResCodes []string `json:"resCodes" validation:"notEmpty"`
+}
+
 type RoleInfoResp struct {
 	RoleNo string `json:"roleNo"`
 	Name   string `json:"name"`
@@ -265,6 +269,64 @@ var (
 	urlResCache  = redis.NewLazyRCache(30 * time.Minute) // cache for url's resource, url -> CachedUrlRes
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
+
+func GenResourceScript(ec common.ExecContext, req GenResScriptReq) (script string, er error) {
+	var resources []ERes
+	tx := mysql.GetMySql().Table("resource").Select(`code, name`).Where(`code in ?`, req.ResCodes).Scan(&resources)
+	if tx.Error != nil {
+		er = tx.Error
+		return
+	}
+
+	if len(resources) < 1 {
+		er = common.NewWebErr("No resource found")
+		return
+	}
+
+	codestr := ""
+	for i, c := range req.ResCodes {
+		codestr += "'" + c + "'"
+		if i < len(req.ResCodes)-1 {
+			codestr += ","
+		}
+	}
+
+	script += "BEGIN;\n"
+	script += fmt.Sprintf("DELETE FROM resource WHERE code IN (%s);\n", codestr)
+	script += fmt.Sprintf("DELETE FROM path_resource WHERE res_code IN (%s);\n\n", codestr)
+
+	script += "INSERT INTO resource (code, name) VALUES "
+	for i, r := range resources {
+		script += fmt.Sprintf("('%s','%s')", r.Code, r.Name)
+		if i < len(resources)-1 {
+			script += ",\n"
+		}
+	}
+	script += ";\n"
+
+	var pathres []EPathRes
+	tx = mysql.GetMySql().Table("path_resource").
+		Select(`path_no, res_code`).
+		Where(`res_code in ?`, req.ResCodes).
+		Scan(&pathres)
+	if tx.Error != nil {
+		er = tx.Error
+		return
+	}
+
+	if len(pathres) > 0 {
+		script += "\nINSERT INTO path_resource (path_no, res_code) VALUES "
+
+		for i, r := range pathres {
+			script += fmt.Sprintf("('%s','%s')", r.PathNo, r.ResCode)
+			if i < len(pathres)-1 {
+				script += ",\n"
+			}
+		}
+	}
+	script += ";\nCOMMIT;"
+	return
+}
 
 func DeleteResource(ec common.ExecContext, req DeleteResourceReq) error {
 
