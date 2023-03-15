@@ -23,6 +23,9 @@ public interface GoAuthClient {
     @PostMapping("/role/info")
     Result<RoleInfoResp> getRoleInfo(@RequestBody RoleInfoReq req);
 
+    @PostMapping("/resource/add")
+    Result<Void> addResource(@RequestBody AddResourceReq req);
+
     @PostMapping("/path/cache/reload")
     Result<Void> reloadPathCache();
 

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.*;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.annotation.Annotation;
 import java.util.*;
 
 /**
@@ -29,10 +30,11 @@ public class RestPathScannerTest {
 
     @Test
     public void should_get_complete_path() {
-        Assertions.assertEquals("/dummy", new RestPathScanner.RestPath("dummy", "", "", RequestMethod.GET).getCompletePath());
-        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info", "", RequestMethod.GET).getCompletePath());
-        Assertions.assertEquals("/info", new RestPathScanner.RestPath("", "/info", "", RequestMethod.GET).getCompletePath());
-        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info/////", "", RequestMethod.GET).getCompletePath());
+        RestPathScanner.PathDocObj doc = new RestPathScanner.PathDocObj();
+        Assertions.assertEquals("/dummy", new RestPathScanner.RestPath("dummy", "", RequestMethod.GET, doc).getCompletePath());
+        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info", RequestMethod.GET, doc).getCompletePath());
+        Assertions.assertEquals("/info", new RestPathScanner.RestPath("", "/info", RequestMethod.GET, doc).getCompletePath());
+        Assertions.assertEquals("/dummy/info", new RestPathScanner.RestPath("dummy", "info/////",  RequestMethod.GET, doc).getCompletePath());
     }
 
     @Component

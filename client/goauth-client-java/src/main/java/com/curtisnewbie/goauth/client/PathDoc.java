@@ -15,4 +15,9 @@ public @interface PathDoc {
     String description() default "";
 
     PathType type() default PathType.PROTECTED;
+
+    String resourceCode() default "";
+
+    String resourceName() default "";
+
 }

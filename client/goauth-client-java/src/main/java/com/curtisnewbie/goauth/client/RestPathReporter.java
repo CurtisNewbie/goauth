@@ -1,6 +1,7 @@
 package com.curtisnewbie.goauth.client;
 
 import com.curtisnewbie.common.vo.*;
+import lombok.Data;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.*;
 import org.springframework.beans.factory.annotation.*;
@@ -37,10 +38,25 @@ public class RestPathReporter implements InitializingBean {
             restPathScanner.onParsed(restPaths -> {
                 final StopWatch sw = new StopWatch();
                 sw.start();
+                reportResources(restPaths, goAuthClient);
                 reportPaths(restPaths, group, goAuthClient);
                 sw.stop();
                 log.info("GoAuth RestPath Reported, took: {}ms", sw.getTotalTimeMillis());
             });
+        }
+    }
+
+    protected static void reportResources(List<RestPathScanner.RestPath> restPaths, GoAuthClient goAuthClient) {
+        final Map<String /* code */, PResource> resources = restPaths.stream()
+                .filter(p -> !p.requestPath.startsWith("/remote"))
+                .filter(p -> StringUtils.hasText(p.pathDoc.resCode()))
+                .map(p -> new PResource(p.pathDoc.resCode(), p.pathDoc.resName()))
+                .collect(Collectors.toMap(r -> r.code, r -> r, (a, b) -> a));
+
+        try {
+            resources.forEach((k, v) -> goAuthClient.addResource(new AddResourceReq(v.name, v.code)).assertIsOk());
+        } catch (Throwable e) {
+            log.error("Failed to report resources to goauth, resources: {}", resources.values(), e);
         }
     }
 
@@ -51,15 +67,16 @@ public class RestPathReporter implements InitializingBean {
                     final AddPathReq ar = new AddPathReq();
                     ar.setUrl("/" + group + p.getCompletePath());
                     ar.setGroup(group);
-                    ar.setType(p.pathType);
-                    ar.setDesc(p.description);
+                    ar.setType(p.pathDoc.type());
+                    ar.setDesc(p.pathDoc.description());
+                    ar.setResCode(p.pathDoc.resCode());
                     return ar;
                 })
                 .collect(Collectors.toList());
 
         try {
             batchReportPaths(reqs, goAuthClient);
-            goAuthClient.reloadPathCache();
+            goAuthClient.reloadPathCache().assertIsOk();
         } catch (Throwable e) {
             log.error("Failed to report path to goauth, reqs: {}", reqs, e);
         }
@@ -96,4 +113,16 @@ public class RestPathReporter implements InitializingBean {
             log.error("Failed to report path to goauth, group: {}, type: {}, url: {}", group, type, url, e);
         }
     }
+
+    @Data
+    private static class PResource {
+        private String code;
+        private String name;
+
+        public PResource(String code, String name) {
+            this.code = code;
+            this.name = name;
+        }
+    }
 }
+

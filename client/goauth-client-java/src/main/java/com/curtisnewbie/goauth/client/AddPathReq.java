@@ -11,4 +11,5 @@ public class AddPathReq {
     private String url;
     private String group;
     private String desc;
+    private String resCode;
 }

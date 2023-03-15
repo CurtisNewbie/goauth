@@ -27,10 +27,22 @@ public class RestPathReporterTest {
     private GoAuthClient goAuthClient;
 
     @Test
-    public void should_report_rest_path() {
+    public void should_report_resources() {
         List<RestPathScanner.RestPath> restPaths = Arrays.asList(
-                new RestPathScanner.RestPath("dummy", "", "dummy", RequestMethod.GET),
-                new RestPathScanner.RestPath("dummy", "info", "info", RequestMethod.GET)
+                new RestPathScanner.RestPath("dummy", "dummy-res-path", RequestMethod.GET, new RestPathScanner.PathDocObj(
+                        "dummy dummy", PathType.PROTECTED, "dummy-code", "dummy-resource"
+                ))
+        );
+
+        RestPathReporter.reportResources(restPaths, goAuthClient);
+    }
+
+    @Test
+    public void should_report_rest_path() {
+        RestPathScanner.PathDocObj doc = new RestPathScanner.PathDocObj();
+        List<RestPathScanner.RestPath> restPaths = Arrays.asList(
+                new RestPathScanner.RestPath("dummy", "dummy", RequestMethod.GET, doc),
+                new RestPathScanner.RestPath("dummy", "info", RequestMethod.GET, doc)
         );
 
         RestPathReporter.reportPaths(restPaths, "test", goAuthClient);

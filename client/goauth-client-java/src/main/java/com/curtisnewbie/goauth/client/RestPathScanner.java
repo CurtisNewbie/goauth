@@ -133,15 +133,13 @@ public class RestPathScanner implements ApplicationContextAware {
         for (int i = 0; i < methods.length; i++) {
             Method m = methods[i];
             PathDoc pathDoc = extractDoc(m);
-            String description = pathDoc != null ? pathDoc.description() : "";
-            PathType type = pathDoc != null ? pathDoc.type() : PathType.PROTECTED;
 
             for (Annotation mda : m.getDeclaredAnnotations()) {
                 Class<?> typ = mda.annotationType();
                 if (clz2Parser.containsKey(typ)) {
                     final List<ParsedMapping> parsed = clz2Parser.get(typ).parsed(mda);
                     for (ParsedMapping pm : parsed) {
-                        restPathList.add(new RestPath(rootPath, pm.requestPath, description, pm.httpMethod, type));
+                        restPathList.add(new RestPath(rootPath, pm.requestPath, pm.httpMethod, PathDocObj.build(pathDoc)));
                     }
 
                     break; // normally, a method can only have one mapping
@@ -157,20 +155,14 @@ public class RestPathScanner implements ApplicationContextAware {
     public static class RestPath {
         public final String rootPath;
         public final String requestPath;
-        public final String description;
         public final RequestMethod httpMethod;
-        public final PathType pathType;
+        public final PathDocObj pathDoc;
 
-        public RestPath(String rootPath, String requestPath, String description, RequestMethod httpMethod, PathType pathType) {
+        public RestPath(String rootPath, String requestPath, RequestMethod httpMethod, PathDocObj pathDoc) {
             this.rootPath = rootPath;
             this.requestPath = requestPath;
-            this.description = description;
             this.httpMethod = httpMethod;
-            this.pathType = pathType;
-        }
-
-        public RestPath(String rootPath, String requestPath, String description, RequestMethod httpMethod) {
-            this(rootPath, requestPath, description, httpMethod, PathType.PROTECTED);
+            this.pathDoc = pathDoc;
         }
 
         public String getCompletePath() {
@@ -195,6 +187,38 @@ public class RestPathScanner implements ApplicationContextAware {
 
             return rtp + rqp;
         }
+    }
+
+    @Data
+    public static class PathDocObj {
+        private String description;
+        private PathType type;
+        private String resCode;
+        private String resName;
+
+        public PathDocObj() {}
+
+        public PathDocObj(String description, PathType type, String resCode, String resName) {
+            this.description = description;
+            this.type = type;
+            this.resCode = resCode;
+            this.resName = resName;
+        }
+
+        public static PathDocObj build(PathDoc doc) {
+            if (doc == null) {
+                return new PathDocObj();
+            }
+            return new PathDocObj(doc.description(), doc.type(), doc.resourceCode(), doc.resourceName());
+        }
+
+        public String description() {return description != null ? description : "";}
+
+        public PathType type() {return type != null ? type : PathType.PROTECTED;}
+
+        public String resCode() {return resCode != null ? resCode : "";}
+
+        public String resName() {return resName != null ? resName : "";}
     }
 
     @FunctionalInterface
