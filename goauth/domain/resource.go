@@ -233,10 +233,11 @@ type UpdatePathReq struct {
 }
 
 type CreatePathReq struct {
-	Type  PathType `json:"type" validation:"notEmpty"`
-	Url   string   `json:"url" validation:"notEmpty,maxLen:128"`
-	Group string   `json:"group" validation:"notEmpty,maxLen:20"`
-	Desc  string   `json:"desc" validation:"maxLen:255"`
+	Type    PathType `json:"type" validation:"notEmpty"`
+	Url     string   `json:"url" validation:"notEmpty,maxLen:128"`
+	Group   string   `json:"group" validation:"notEmpty,maxLen:20"`
+	Desc    string   `json:"desc" validation:"maxLen:255"`
+	ResCode string   `json:"resCode"`
 }
 
 type BatchCreatePathReq struct {
@@ -533,20 +534,20 @@ func genPathNo(group string, url string) string {
 func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 	req.Url = preprocessUrl(req.Url)
 	req.Group = strings.TrimSpace(req.Group)
+	pathNo := genPathNo(req.Group, req.Url)
 
-	_, e := redis.RLockRun(ec, "goauth:path:url"+req.Url, func() (any, error) { // lock for new path's url
+	res, e := redis.RLockRun(ec, "goauth:path:url"+req.Url, func() (any, error) { // lock for new path's url
 
 		var id int
 		tx := mysql.GetMySql().Raw(`select id from path where url = ? limit 1`, req.Url).Scan(&id)
 		if tx.Error != nil {
-			return nil, tx.Error
+			return false, tx.Error
 		}
 
 		if id > 0 {
-			return nil, nil
+			return false, nil
 		}
 
-		pathNo := genPathNo(req.Group, req.Url)
 		ep := EPath{
 			Url:      req.Url,
 			Desc:     req.Desc,
@@ -560,8 +561,20 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			Table("path").
 			Omit("Id", "CreateTime", "UpdateTime").
 			Create(&ep)
-		return nil, tx.Error
+		return true, tx.Error
 	})
+	created := false
+	if res != nil {
+		created = res.(bool)
+	}
+	
+	if e != nil && created && req.ResCode != "" {
+		return BindPathRes(ec, BindPathResReq{
+			PathNo:  pathNo,
+			ResCode: req.ResCode,
+		})
+	}
+
 	return e
 }
 
@@ -612,9 +625,9 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 				return nil, common.NewWebErr("Resource not found")
 			}
 
-			// check if the path and resource are already bound
+			// check if the path is already bound to a resource
 			var prid int
-			tx = mysql.GetMySql().Raw(`select id from path_resource where path_no = ? and res_code = ?`, req.PathNo, req.ResCode).Scan(&prid)
+			tx = mysql.GetMySql().Raw(`select id from path_resource where path_no = ?`, req.PathNo).Scan(&prid)
 			if tx.Error != nil || prid > 0 {
 				return nil, tx.Error
 			}

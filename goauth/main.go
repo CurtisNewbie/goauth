@@ -169,12 +169,16 @@ func main() {
 		return domain.GetRoleInfo(ec, req)
 	})
 
-	urlpath = "internal/resource/script/generate"
+	/*
+		curl -X POST "http://localhost:8081/internal/resource/script/generate" \
+			-H 'content-type:application/json' \
+			-d '{ "resCodes" : ["basic-user", "manage-users"]}' \
+			-o output.sql
+	*/
+	urlpath = "/internal/resource/script/generate"
 	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Generate resource scripts for production environment, for internal use only"}
 	server.RawPost(urlpath, func(c *gin.Context) {
-		user, _ := server.ExtractUser(c)
-		ctx := c.Request.Context()
-		ec := common.NewExecContext(ctx, user)
+		ec := common.EmptyExecContext()
 		var req domain.GenResScriptReq
 		server.MustBindJson(c, &req)
 		content, e := domain.GenResourceScript(ec, req)
@@ -187,6 +191,10 @@ func main() {
 	})
 
 	// internal endpoints
+	server.PostJ(server.InternalApiPath("/resource/add"),
+		func(c *gin.Context, ec common.ExecContext, req domain.CreateResReq) (any, error) {
+			return nil, domain.CreateResourceIfNotExist(ec, req)
+		})
 	server.PostJ(server.InternalApiPath("/path/resource/access-test"),
 		func(c *gin.Context, ec common.ExecContext, req domain.TestResAccessReq) (any, error) {
 			return domain.TestResourceAccess(ec, req)
