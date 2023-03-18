@@ -2,9 +2,9 @@ package main
 
 import (
 	"os"
-	"strings"
 
 	"github.com/curtisnewbie/goauth/domain"
+	"github.com/curtisnewbie/goauth/web"
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/server"
 	"github.com/gin-gonic/gin"
@@ -20,179 +20,109 @@ type PathDoc struct {
 }
 
 func main() {
-	// jobs (with single instance only)
-	common.ScheduleCron("0 0/15 * * * *", func() {
-		ec := common.EmptyExecContext()
-		if e := domain.LoadRoleResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load role resource, %v", e)
-		}
-	})
-	common.ScheduleCron("0 0/15 * * * *", func() {
-		ec := common.EmptyExecContext()
-		if e := domain.LoadPathResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load path resource, %v", e)
-		}
-	})
+	ec := common.EmptyExecContext()
+	scheduleJobs()                         // schedule cron jobs
+	registerWebEndpoints(ec)               // register http server endpoints
+	server.DefaultBootstrapServer(os.Args) // bootstrap server
+}
 
-	// for the first time
-	server.OnServerBootstrapped(func() {
-		ec := common.EmptyExecContext()
-		if e := domain.LoadRoleResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load role resource, %v", e)
-		}
-	})
-	server.OnServerBootstrapped(func() {
-		ec := common.EmptyExecContext()
-		if e := domain.LoadPathResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load path resource, %v", e)
-		}
-	})
-
-	// path doc
-	pathDocs := map[string]PathDoc{}
-
+func registerWebEndpoints(ec common.ExecContext) {
 	/*
-		open-api endpoints
-	*/
+		------------------------------
 
-	/*
 		public endpoints
+
+		-------------------------------
 	*/
 	urlpath := server.OpenApiPath("/resource/brief/user")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PUBLIC, Desc: "List resources of current user"}
-	server.Get(urlpath, func(c *gin.Context, ec common.ExecContext) (any, error) {
-		if !ec.Authenticated() {
-			return []domain.ResBrief{}, nil
-		}
-		return domain.ListAllResBriefsOfRole(ec, ec.User.RoleNo)
-	})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List resources of current user"})
+	server.Get(urlpath, web.ListAllResBriefsOfRole)
 
-	/*
-		protected endpoints
-	*/
 	urlpath = server.OpenApiPath("/resource/brief/all")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PUBLIC, Desc: "List all resource brief info"}
-	server.Get(urlpath, func(c *gin.Context, ec common.ExecContext) (any, error) {
-		return domain.ListAllResBriefs(ec)
-	})
-
-	urlpath = server.OpenApiPath("/resource/add")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.CreateResReq) (any, error) {
-		return nil, domain.CreateResourceIfNotExist(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/resource/remove")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.DeleteResourceReq) (any, error) {
-		return nil, domain.DeleteResource(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/resource/brief/candidates")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: CODE_MNG_RESOURCES}
-	server.Get(urlpath, func(c *gin.Context, ec common.ExecContext) (any, error) {
-		roleNo := c.Query("roleNo")
-		return domain.ListResourceCandidatesForRole(ec, roleNo)
-	})
-
-	urlpath = server.OpenApiPath("/resource/list")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.ListResReq) (any, error) {
-		return domain.ListResources(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/role/resource/add")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.AddRoleResReq) (any, error) {
-		return nil, domain.AddResToRoleIfNotExist(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/role/resource/remove")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.RemoveRoleResReq) (any, error) {
-		return nil, domain.RemoveResFromRole(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/role/add")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.AddRoleReq) (any, error) {
-		return nil, domain.AddRole(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/role/list")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.ListRoleReq) (any, error) {
-		return domain.ListRoles(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/role/brief/all")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: CODE_MNG_RESOURCES}
-	server.Get(urlpath, func(c *gin.Context, ec common.ExecContext) (any, error) {
-		return domain.ListAllRoleBriefs(ec)
-	})
-
-	urlpath = server.OpenApiPath("/role/resource/list")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.ListRoleResReq) (any, error) {
-		return domain.ListRoleRes(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/path/list")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.ListPathReq) (any, error) {
-		return domain.ListPaths(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/path/resource/bind")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.BindPathResReq) (any, error) {
-		return nil, domain.BindPathRes(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/path/resource/unbind")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.UnbindPathResReq) (any, error) {
-		return nil, domain.UnbindPathRes(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/path/delete")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.DeletePathReq) (any, error) {
-		return nil, domain.DeletePath(ec, req)
-	})
-
-	urlpath = server.OpenApiPath("/path/update")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: CODE_MNG_RESOURCES}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.UpdatePathReq) (any, error) {
-		return nil, domain.UpdatePath(ec, req)
-	})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List all resource brief info"})
+	server.Get(urlpath, web.ListAllResBriefs)
 
 	urlpath = server.OpenApiPath("/role/info")
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PUBLIC, Desc: "Get role info"}
-	server.PostJ(urlpath, func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
-		return domain.GetRoleInfo(ec, req)
-	})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "Get role info"})
+	server.PostJ(urlpath, web.GetRoleInfo)
 
 	/*
+		------------------------------
+
+		protected endpoints
+
+		-------------------------------
+	*/
+	urlpath = server.OpenApiPath("/resource/add")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.CreateResourceIfNotExist)
+
+	urlpath = server.OpenApiPath("/resource/remove")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.DeleteResource)
+
+	urlpath = server.OpenApiPath("/resource/brief/candidates")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: CODE_MNG_RESOURCES})
+	server.Get(urlpath, web.ListResourceCandidatesForRole)
+
+	urlpath = server.OpenApiPath("/resource/list")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.ListResources)
+
+	urlpath = server.OpenApiPath("/role/resource/add")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.AddResToRoleIfNotExist)
+
+	urlpath = server.OpenApiPath("/role/resource/remove")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.RemoveResFromRole)
+
+	urlpath = server.OpenApiPath("/role/add")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.AddRole)
+
+	urlpath = server.OpenApiPath("/role/list")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.ListRoles)
+
+	urlpath = server.OpenApiPath("/role/brief/all")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: CODE_MNG_RESOURCES})
+	server.Get(urlpath, web.ListAllRoleBriefs)
+
+	urlpath = server.OpenApiPath("/role/resource/list")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.ListRoleRes)
+
+	urlpath = server.OpenApiPath("/path/list")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.ListPaths)
+
+	urlpath = server.OpenApiPath("/path/resource/bind")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.BindPathRes)
+
+	urlpath = server.OpenApiPath("/path/resource/unbind")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.UnbindPathRes)
+
+	urlpath = server.OpenApiPath("/path/delete")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.DeletePath)
+
+	urlpath = server.OpenApiPath("/path/update")
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: CODE_MNG_RESOURCES})
+	server.PostJ(urlpath, web.UpdatePath)
+
+	/*
+		Generate resource scripts for production environment, for internal use only
+
 		curl -X POST "http://localhost:8081/internal/resource/script/generate" \
 			-H 'content-type:application/json' \
 			-d '{ "resCodes" : ["basic-user", "manage-users"]}' \
 			-o output.sql
 	*/
 	urlpath = "/internal/resource/script/generate"
-	pathDocs[urlpath] = PathDoc{Type: domain.PT_PROTECTED, Desc: "Generate resource scripts for production environment, for internal use only"}
-	server.RawPost(urlpath, func(c *gin.Context) {
-		ec := common.EmptyExecContext()
-		var req domain.GenResScriptReq
-		server.MustBindJson(c, &req)
-		content, e := domain.GenResourceScript(ec, req)
-
-		if e != nil {
-			server.DispatchErrJson(c, e)
-			return
-		}
-		c.Writer.Write([]byte(content))
-	})
+	server.RawPost(urlpath, web.GenResourceScript)
 
 	// internal endpoints
 	server.PostJ(server.InternalApiPath("/resource/add"),
@@ -227,48 +157,53 @@ func main() {
 			}()
 			return nil, nil
 		})
+}
 
-	// report paths (to itself) on bootstrap
+func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 	server.OnServerBootstrapped(func() {
-		ec := common.EmptyExecContext()
+		ptype := doc.Type
+		desc := doc.Desc
+		resCode := doc.Code
 
-		e := domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
-			Code: CODE_MNG_RESOURCES,
-			Name: NAME_MNG_RESOURCES,
-		})
-		if e != nil {
+		r := domain.CreatePathReq{
+			Type:    ptype,
+			Desc:    desc,
+			Group:   "goauth",
+			Url:     "/goauth" + url,
+			ResCode: resCode,
+		}
+		if e := domain.CreatePathIfNotExist(ec, r); e != nil {
 			ec.Log.Fatal(e)
 		}
+	})
+}
 
-		routes := server.GetRecordedServerRoutes()
-
-		for _, u := range routes {
-			if !strings.HasPrefix(u, "/remote") {
-
-				ptype := domain.PT_PROTECTED
-				desc := ""
-				resCode := ""
-
-				if doc, ok := pathDocs[u]; ok {
-					ptype = doc.Type
-					desc = doc.Desc
-					resCode = doc.Code
-				}
-
-				r := domain.CreatePathReq{
-					Type:    ptype,
-					Desc:    desc,
-					Group:   "goauth",
-					Url:     "/goauth" + u,
-					ResCode: resCode,
-				}
-				if e := domain.CreatePathIfNotExist(ec, r); e != nil {
-					ec.Log.Fatal(e)
-				}
-			}
+func scheduleJobs() {
+	// jobs (with single instance only)
+	common.ScheduleCron("0 0/15 * * * *", func() {
+		ec := common.EmptyExecContext()
+		if e := domain.LoadRoleResCache(ec); e != nil {
+			ec.Log.Errorf("Failed to load role resource, %v", e)
+		}
+	})
+	common.ScheduleCron("0 0/15 * * * *", func() {
+		ec := common.EmptyExecContext()
+		if e := domain.LoadPathResCache(ec); e != nil {
+			ec.Log.Errorf("Failed to load path resource, %v", e)
 		}
 	})
 
-	// bootstrap server
-	server.DefaultBootstrapServer(os.Args)
+	// for the first time
+	server.OnServerBootstrapped(func() {
+		ec := common.EmptyExecContext()
+		if e := domain.LoadRoleResCache(ec); e != nil {
+			ec.Log.Errorf("Failed to load role resource, %v", e)
+		}
+	})
+	server.OnServerBootstrapped(func() {
+		ec := common.EmptyExecContext()
+		if e := domain.LoadPathResCache(ec); e != nil {
+			ec.Log.Errorf("Failed to load path resource, %v", e)
+		}
+	})
 }
