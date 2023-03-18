@@ -5,6 +5,7 @@ import lombok.extern.slf4j.*;
 import org.springframework.aop.support.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.*;
 import org.springframework.util.*;
 import org.springframework.web.bind.annotation.*;
@@ -123,6 +124,7 @@ public class RestPathScanner implements ApplicationContextAware {
     public static void parseRestPath(List<RestPath> restPathList, Class<?> beanClz, Function<String, String> resolvePlaceholders) {
         String rootPath = "";
         final RequestMapping rootMapping = beanClz.getDeclaredAnnotation(RequestMapping.class);
+        final PathDoc rootDoc = beanClz.getDeclaredAnnotation(PathDoc.class);
         if (rootMapping != null) {
             final List<ParsedMapping> parsed = clz2Parser.get(RequestMapping.class).parsed(rootMapping);
             if (!parsed.isEmpty())
@@ -139,7 +141,7 @@ public class RestPathScanner implements ApplicationContextAware {
                 if (clz2Parser.containsKey(typ)) {
                     final List<ParsedMapping> parsed = clz2Parser.get(typ).parsed(mda);
                     for (ParsedMapping pm : parsed) {
-                        restPathList.add(new RestPath(rootPath, pm.requestPath, pm.httpMethod, PathDocObj.build(pathDoc)));
+                        restPathList.add(new RestPath(rootPath, pm.requestPath, pm.httpMethod, PathDocObj.build(pathDoc, rootDoc)));
                     }
 
                     break; // normally, a method can only have one mapping
@@ -156,9 +158,9 @@ public class RestPathScanner implements ApplicationContextAware {
         public final String rootPath;
         public final String requestPath;
         public final RequestMethod httpMethod;
-        public final PathDocObj pathDoc;
+        @Nullable public final PathDocObj pathDoc;
 
-        public RestPath(String rootPath, String requestPath, RequestMethod httpMethod, PathDocObj pathDoc) {
+        public RestPath(String rootPath, String requestPath, RequestMethod httpMethod, @Nullable PathDocObj pathDoc) {
             this.rootPath = rootPath;
             this.requestPath = requestPath;
             this.httpMethod = httpMethod;
@@ -191,6 +193,7 @@ public class RestPathScanner implements ApplicationContextAware {
 
     @Data
     public static class PathDocObj {
+        private PathDocObj parentDoc;
         private String description;
         private PathType type;
         private String resCode;
@@ -198,27 +201,58 @@ public class RestPathScanner implements ApplicationContextAware {
 
         public PathDocObj() {}
 
-        public PathDocObj(String description, PathType type, String resCode, String resName) {
+        public PathDocObj(String description, PathType type, String resCode, String resName, PathDocObj parentDoc) {
             this.description = description;
             this.type = type;
             this.resCode = resCode;
             this.resName = resName;
+            this.parentDoc = parentDoc;
         }
 
         public static PathDocObj build(PathDoc doc) {
-            if (doc == null) {
-                return new PathDocObj();
-            }
-            return new PathDocObj(doc.description(), doc.type(), doc.resourceCode(), doc.resourceName());
+            if (doc == null) {return null;}
+            return new PathDocObj(doc.description(), doc.type(), doc.resourceCode(), doc.resourceName(), null);
+        }
+
+        public static PathDocObj build(PathDoc doc, PathDoc parent) {
+            if (doc == null) {return build(parent);}
+            return new PathDocObj(doc.description(), doc.type(), doc.resourceCode(), doc.resourceName(), parent != null ? build(parent) : null);
         }
 
         public String description() {return description != null ? description : "";}
 
         public PathType type() {return type != null ? type : PathType.PROTECTED;}
 
-        public String resCode() {return resCode != null ? resCode : "";}
+        public String resCode() {
+            String code = resCode;
 
-        public String resName() {return resName != null ? resName : "";}
+            if (StringUtils.hasText(code)) {
+                return code;
+            }
+
+            if (parentDoc != null && StringUtils.hasText(code = parentDoc.resCode())) {
+                return code;
+            }
+
+            if (code == null) code = "";
+            return code;
+        }
+
+        public String resName() {
+            String name = resName;
+
+            if (StringUtils.hasText(name)) {
+                return name;
+            }
+
+            if (parentDoc != null && StringUtils.hasText(name = parentDoc.resName())) {
+                return name;
+            }
+
+            if (name == null) name = "";
+            return name;
+
+        }
     }
 
     @FunctionalInterface

@@ -9,7 +9,6 @@ import org.springframework.core.env.*;
 import org.springframework.util.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +48,7 @@ public class RestPathReporter implements InitializingBean {
     protected static void reportResources(List<RestPathScanner.RestPath> restPaths, GoAuthClient goAuthClient) {
         final Map<String /* code */, PResource> resources = restPaths.stream()
                 .filter(p -> !p.requestPath.startsWith("/remote"))
-                .filter(p -> StringUtils.hasText(p.pathDoc.resCode()))
+                .filter(p -> p.pathDoc != null && StringUtils.hasText(p.pathDoc.resCode()))
                 .map(p -> new PResource(p.pathDoc.resCode(), p.pathDoc.resName()))
                 .collect(Collectors.toMap(r -> r.code, r -> r, (a, b) -> a));
 
@@ -67,9 +66,9 @@ public class RestPathReporter implements InitializingBean {
                     final AddPathReq ar = new AddPathReq();
                     ar.setUrl("/" + group + p.getCompletePath());
                     ar.setGroup(group);
-                    ar.setType(p.pathDoc.type());
-                    ar.setDesc(p.pathDoc.description());
-                    ar.setResCode(p.pathDoc.resCode());
+                    ar.setType(p.pathDoc != null ? p.pathDoc.type() : PathType.PROTECTED);
+                    ar.setDesc(p.pathDoc != null ? p.pathDoc.description() : "");
+                    ar.setResCode(p.pathDoc != null ? p.pathDoc.resCode() : "");
                     return ar;
                 })
                 .collect(Collectors.toList());

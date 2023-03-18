@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * @author yongj.zhuang
  */
 @Documented
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PathDoc {
 

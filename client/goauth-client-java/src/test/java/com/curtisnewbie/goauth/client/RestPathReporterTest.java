@@ -30,7 +30,7 @@ public class RestPathReporterTest {
     public void should_report_resources() {
         List<RestPathScanner.RestPath> restPaths = Arrays.asList(
                 new RestPathScanner.RestPath("dummy", "dummy-res-path", RequestMethod.GET, new RestPathScanner.PathDocObj(
-                        "dummy dummy", PathType.PROTECTED, "dummy-code", "dummy-resource"
+                        "dummy dummy", PathType.PROTECTED, "dummy-code", "dummy-resource", null
                 ))
         );
 

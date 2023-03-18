@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 /**
+ * GoAuth Client
+ *
  * @author yongj.zhuang
  */
 @FeignClient(value = "goauth", path = "/remote")
