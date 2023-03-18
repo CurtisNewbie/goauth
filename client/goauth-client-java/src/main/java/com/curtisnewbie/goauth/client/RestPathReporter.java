@@ -75,7 +75,6 @@ public class RestPathReporter implements InitializingBean {
 
         try {
             batchReportPaths(reqs, goAuthClient);
-            goAuthClient.reloadPathCache().assertIsOk();
         } catch (Throwable e) {
             log.error("Failed to report path to goauth, reqs: {}", reqs, e);
         }

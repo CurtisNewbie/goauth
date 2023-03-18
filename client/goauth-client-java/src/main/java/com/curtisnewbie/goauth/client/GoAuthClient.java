@@ -28,7 +28,4 @@ public interface GoAuthClient {
     @PostMapping("/resource/add")
     Result<Void> addResource(@RequestBody AddResourceReq req);
 
-    @PostMapping("/path/cache/reload")
-    Result<Void> reloadPathCache();
-
 }
