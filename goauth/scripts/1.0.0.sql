@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS path (
   `update_by` varchar(255) NOT NULL DEFAULT '' COMMENT 'who updated this record',
   `is_del` tinyint NOT NULL DEFAULT '0' COMMENT '0-normal, 1-deleted',
   PRIMARY KEY (`id`),
-  KEY `url` (`url`)
+  KEY `path_no` (`path_no`)
 ) ENGINE=InnoDB COMMENT='Paths';
 
 CREATE TABLE IF NOT EXISTS path_resource (

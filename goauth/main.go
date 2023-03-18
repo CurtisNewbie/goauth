@@ -145,18 +145,6 @@ func registerWebEndpoints(ec common.ExecContext) {
 		func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
 			return domain.GetRoleInfo(ec, req)
 		})
-	server.Post(server.InternalApiPath("/path/cache/reload"),
-		func(c *gin.Context, ec common.ExecContext) (any, error) {
-			ec.Log.Info("Request to reload path cache")
-
-			// asynchronously reload the cache of paths and resources
-			go func() {
-				if e := domain.LoadPathResCache(ec); e != nil {
-					ec.Log.Errorf("Failed to load path resource, %v", e)
-				}
-			}()
-			return nil, nil
-		})
 }
 
 func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {

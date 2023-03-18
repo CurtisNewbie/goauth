@@ -547,15 +547,14 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 	req.Group = strings.TrimSpace(req.Group)
 	pathNo := genPathNo(req.Group, req.Url)
 
-	_, e := redis.RLockRun(ec, "goauth:path:url"+req.Url, func() (any, error) { // lock for new path's url
+	res, e := lockPath(ec, pathNo, func() (any, error) {
 		var id int
-		tx := mysql.GetMySql().Raw(`select id from path where url = ? limit 1`, req.Url).Scan(&id)
+		tx := mysql.GetMySql().Raw(`select id from path where path_no = ? limit 1`, pathNo).Scan(&id)
 		if tx.Error != nil {
-			return nil, tx.Error
+			return false, tx.Error
 		}
-
-		if id > 0 {
-			return nil, nil
+		if id > 0 { // exists already
+			return false, nil
 		}
 
 		ep := EPath{
@@ -571,13 +570,18 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			Table("path").
 			Omit("Id", "CreateTime", "UpdateTime").
 			Create(&ep)
-		return nil, tx.Error
+		return true, tx.Error
 	})
 	if e != nil {
 		return e
 	}
 
-	if req.ResCode != "" {
+	created := res.(bool)
+	if created { // reload cache for the path
+		loadOnePathResCacheAsync(ec, pathNo)
+	}
+
+	if req.ResCode != "" { // rebind path and resource
 		return RebindPathRes(ec, BindPathResReq{PathNo: pathNo, ResCode: req.ResCode})
 	}
 
