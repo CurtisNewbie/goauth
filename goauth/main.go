@@ -27,6 +27,13 @@ func main() {
 }
 
 func registerWebEndpoints(ec common.ExecContext) {
+	server.OnServerBootstrapped(func() {
+		domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
+			Code: CODE_MNG_RESOURCES,
+			Name: NAME_MNG_RESOURCES,
+		})
+	})
+
 	/*
 		------------------------------
 
