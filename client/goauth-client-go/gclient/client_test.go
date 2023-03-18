@@ -24,12 +24,40 @@ func TestTestResourceAccess(t *testing.T) {
 	t.Logf("r: %+v", r)
 }
 
+func TestAddResource(t *testing.T) {
+	req := AddResourceReq{
+		Code: "goauth-client-go-test-resource",
+		Name: "goauth-client-go-test-resource",
+	}
+
+	e := AddResource(context.Background(), req)
+	if e != nil {
+		t.Fatal(e)
+	}
+}
+
+func TestBatchAddPath(t *testing.T) {
+	req := CreatePathReq{
+		Url:   "/test/url/gclient",
+		Type:  PT_PROTECTED,
+		Group: "goauth-client-go",
+		Desc:  "some test path",
+	}
+
+	e := BatchAddPath(context.Background(), BatchCreatePathReq{
+		Reqs: []CreatePathReq{req},
+	})
+	if e != nil {
+		t.Fatal(e)
+	}
+}
+
 func TestAddPath(t *testing.T) {
 	req := CreatePathReq{
 		Url:   "/test/url/gclient",
 		Type:  PT_PROTECTED,
-		Group: "goauth-client-java",
-		Desc: "some test path",
+		Group: "goauth-client-go",
+		Desc:  "some test path",
 	}
 
 	e := AddPath(context.Background(), req)
