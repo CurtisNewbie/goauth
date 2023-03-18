@@ -219,39 +219,36 @@ public class RestPathScanner implements ApplicationContextAware {
             return new PathDocObj(doc.description(), doc.type(), doc.resourceCode(), doc.resourceName(), parent != null ? build(parent) : null);
         }
 
-        public String description() {return description != null ? description : "";}
+        public String description() {
+            String s = description;
+            if (StringUtils.hasText(s)) return s;
+            if (parentDoc != null && StringUtils.hasText(s = parentDoc.description())) return s;
+            if (s == null) s = "";
+            return s;
+        }
 
-        public PathType type() {return type != null ? type : PathType.PROTECTED;}
+        public PathType type() {
+            PathType t = type;
+            if (t != null) return t;
+            if (parentDoc != null && (t = parentDoc.type()) != null) return t;
+            if (t == null) t = PathType.PROTECTED;
+            return t;
+        }
 
         public String resCode() {
             String code = resCode;
-
-            if (StringUtils.hasText(code)) {
-                return code;
-            }
-
-            if (parentDoc != null && StringUtils.hasText(code = parentDoc.resCode())) {
-                return code;
-            }
-
+            if (StringUtils.hasText(code)) return code;
+            if (parentDoc != null && StringUtils.hasText(code = parentDoc.resCode())) return code;
             if (code == null) code = "";
             return code;
         }
 
         public String resName() {
             String name = resName;
-
-            if (StringUtils.hasText(name)) {
-                return name;
-            }
-
-            if (parentDoc != null && StringUtils.hasText(name = parentDoc.resName())) {
-                return name;
-            }
-
+            if (StringUtils.hasText(name)) return name;
+            if (parentDoc != null && StringUtils.hasText(name = parentDoc.resName())) return name;
             if (name == null) name = "";
             return name;
-
         }
     }
 
