@@ -459,7 +459,7 @@ func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
 
 func loadOnePathResCacheAsync(ec common.ExecContext, pathNo string) {
 	go func(ec common.ExecContext, pathNo string) {
-		ec.Log.Infof("Refreshing path cache, pathNo: %s", pathNo)
+		// ec.Log.Infof("Refreshing path cache, pathNo: %s", pathNo)
 		ep, e := findPathRes(pathNo)
 		if e != nil {
 			ec.Log.Errorf("Failed to reload path cache, pathNo: %s, %v", pathNo, e)
@@ -504,7 +504,7 @@ func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 		}
 
 		if id > 0 {
-			ec.Log.Infof("Resource '%s' (%s) already exist", req.Name)
+			ec.Log.Infof("Resource '%s' (%s) already exist", req.Code, req.Name)
 			return nil, nil
 		}
 
@@ -554,6 +554,7 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			return false, tx.Error
 		}
 		if id > 0 { // exists already
+			ec.Log.Infof("Path '%s' (%s) already exists", req.Url, pathNo)
 			return false, nil
 		}
 
@@ -570,7 +571,12 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			Table("path").
 			Omit("Id", "CreateTime", "UpdateTime").
 			Create(&ep)
-		return true, tx.Error
+		if tx.Error != nil {
+			return false, tx.Error
+		}
+
+		ec.Log.Infof("Created path (%s) '{%s}'", pathNo, req.Url)
+		return true, nil
 	})
 	if e != nil {
 		return e
@@ -1131,7 +1137,7 @@ func preprocessUrl(url string) string {
 func findPathRes(pathNo string) (ExtendedPathRes, error) {
 	var ep ExtendedPathRes
 	tx := mysql.GetMySql().
-		Raw("select p.*, pr.res_code from path p left join path_resource pr on p.path_no = pr.path_no where p.path_no = ?", pathNo).
+		Raw("select p.*, pr.res_code from path p left join path_resource pr on p.path_no = pr.path_no where p.path_no = ? limit 1", pathNo).
 		Scan(&ep)
 	if tx.Error != nil {
 		return ep, tx.Error
