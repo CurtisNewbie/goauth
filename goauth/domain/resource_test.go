@@ -185,7 +185,7 @@ func TestAddResToRole(t *testing.T) {
 }
 
 func TestGenPathNo(t *testing.T) {
-	pathNo := genPathNo("test", "/common/path/is/that/okay/if/i/amy/very")
+	pathNo := genPathNo("test", "/common/path/is/that/okay/if/i/amy/very", "GET")
 	if pathNo == "" {
 		t.Error("pathNo is empty")
 		return

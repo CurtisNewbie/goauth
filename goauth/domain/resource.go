@@ -47,6 +47,7 @@ type ExtendedPathRes struct {
 	ResCode    string   // resource code
 	Desc       string   // description
 	Url        string   // url
+	Method     string   // http method
 	Ptype      PathType // path type: PROTECTED, PUBLIC
 	CreateTime common.ETime
 	CreateBy   string
@@ -60,6 +61,7 @@ type EPath struct {
 	PathNo     string   // path no
 	Desc       string   // description
 	Url        string   // url
+	Method     string   // method
 	Ptype      PathType // path type: PROTECTED, PUBLIC
 	CreateTime common.ETime
 	CreateBy   string
@@ -113,6 +115,7 @@ type CachedUrlRes struct {
 	PathNo  string   // path no
 	ResCode string   // resource code
 	Url     string   // url
+	Method  string   // http method
 	Ptype   PathType // path type: PROTECTED, PUBLIC
 }
 
@@ -128,6 +131,7 @@ type AddRoleReq struct {
 type TestResAccessReq struct {
 	RoleNo string `json:"roleNo"`
 	Url    string `json:"url"`
+	Method string `json:"method"`
 }
 
 type TestResAccessResp struct {
@@ -161,6 +165,7 @@ type WPath struct {
 	ResName    string       `json:"resName"`
 	Pgroup     string       `json:"pgroup"`
 	PathNo     string       `json:"pathNo"`
+	Method     string       `json:"method"`
 	ResCode    string       `json:"resCode"`
 	Desc       string       `json:"desc"`
 	Url        string       `json:"url"`
@@ -246,12 +251,9 @@ type CreatePathReq struct {
 	Type    PathType `json:"type" validation:"notEmpty"`
 	Url     string   `json:"url" validation:"notEmpty,maxLen:128"`
 	Group   string   `json:"group" validation:"notEmpty,maxLen:20"`
+	Method  string   `json:"method" validation:"notEmpty,maxLen:10"`
 	Desc    string   `json:"desc" validation:"maxLen:255"`
 	ResCode string   `json:"resCode"`
-}
-
-type BatchCreatePathReq struct {
-	Reqs []CreatePathReq `json:"reqs"`
 }
 
 type DeletePathReq struct {
@@ -473,7 +475,7 @@ func loadOnePathResCacheAsync(ec common.ExecContext, pathNo string) {
 			return
 		}
 
-		if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
+		if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, cachedStr); e != nil {
 			ec.Log.Errorf("Failed to save cached url resource, pathNo: %s, %v", pathNo, e)
 			return
 		}
@@ -524,28 +526,16 @@ func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 	return e
 }
 
-func BatchCreatePathIfNotExist(ec common.ExecContext, req BatchCreatePathReq) error {
-	if req.Reqs == nil {
-		return nil
-	}
-
-	for _, r := range req.Reqs {
-		if e := CreatePathIfNotExist(ec, r); e != nil {
-			return e
-		}
-	}
-	return nil
-}
-
-func genPathNo(group string, url string) string {
-	cksum := md5.Sum([]byte(group + url))
+func genPathNo(group string, url string, method string) string {
+	cksum := md5.Sum([]byte(group + method + url))
 	return "path_" + base64.StdEncoding.EncodeToString(cksum[:])
 }
 
 func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 	req.Url = preprocessUrl(req.Url)
 	req.Group = strings.TrimSpace(req.Group)
-	pathNo := genPathNo(req.Group, req.Url)
+	req.Method = strings.ToUpper(strings.TrimSpace(req.Method))
+	pathNo := genPathNo(req.Group, req.Url, req.Method)
 
 	res, e := lockPath(ec, pathNo, func() (any, error) {
 		var id int
@@ -563,6 +553,7 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			Desc:     req.Desc,
 			Ptype:    req.Type,
 			Pgroup:   req.Group,
+			Method:   req.Method,
 			PathNo:   pathNo,
 			CreateBy: ec.User.Username,
 			UpdateBy: ec.User.Username,
@@ -923,9 +914,10 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 
 	// some sanitization & standardization for the url
 	url = preprocessUrl(url)
+	method := strings.ToUpper(strings.TrimSpace(req.Method))
 
 	// find resource required for the url
-	cur, e := lookupUrlRes(ec, url)
+	cur, e := lookupUrlRes(ec, url, method)
 	if e != nil {
 		return forbidden, e
 	}
@@ -934,7 +926,6 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 	if cur.Ptype == PT_PUBLIC {
 		return permitted, nil
 	}
-	ec.Log.Infof("'%s' is protected, validating resource access", url)
 
 	// doesn't even have role
 	roleNo = strings.TrimSpace(roleNo)
@@ -1032,8 +1023,8 @@ func listRoleRes(ec common.ExecContext, roleNo string) ([]ERoleRes, error) {
 	return rr, nil
 }
 
-func lookupUrlRes(ec common.ExecContext, url string) (CachedUrlRes, error) {
-	js, e := urlResCache.Get(ec, url)
+func lookupUrlRes(ec common.ExecContext, url string, method string) (CachedUrlRes, error) {
+	js, e := urlResCache.Get(ec, method+":"+url)
 	if e != nil {
 		return CachedUrlRes{}, e
 	}
@@ -1073,7 +1064,7 @@ func LoadPathResCache(ec common.ExecContext) error {
 			if e != nil {
 				return nil, e
 			}
-			if e := urlResCache.Put(ec, ep.Url, cachedStr); e != nil {
+			if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, cachedStr); e != nil {
 				return nil, e
 			}
 			// ec.Log.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
@@ -1092,6 +1083,7 @@ func prepCachedUrlResStr(ec common.ExecContext, epath ExtendedPathRes) (string, 
 		PathNo:  epath.PathNo,
 		ResCode: epath.ResCode,
 		Url:     epath.Url,
+		Method:  epath.Method,
 		Ptype:   epath.Ptype,
 	}
 

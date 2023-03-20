@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS path (
   `pgroup` varchar(20) NOT NULL DEFAULT '' COMMENT 'path group',
   `path_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'path no',
   `desc` varchar(255) NOT NULL DEFAULT '' COMMENT 'description',
+  `method` varchar(10) NOT NULL DEFAULT ''  COMMENT 'http method',
   `url` varchar(128) NOT NULL DEFAULT '' COMMENT 'path url',
   `ptype` varchar(10) NOT NULL DEFAULT '' COMMENT 'path type: PROTECTED, PUBLIC',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when the record is created',
