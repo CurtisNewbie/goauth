@@ -81,23 +81,10 @@ public class RestPathReporter implements InitializingBean {
                     ar.setType(p.pathDoc != null ? p.pathDoc.type() : PathType.PROTECTED);
                     ar.setDesc(p.pathDoc != null ? p.pathDoc.description() : "");
                     ar.setResCode(p.pathDoc != null ? p.pathDoc.resCode() : "");
+                    ar.setMethod(p.httpMethod.name());
                     return ar;
                 })
                 .forEach(ar -> reportPath(ar, goAuthClient));
-    }
-
-    protected static void batchReportPaths(List<AddPathReq> reqList, GoAuthClient goAuthClient) {
-        final BatchAddPathReq req = new BatchAddPathReq();
-        req.setReqs(reqList);
-
-        // if there are too many paths, this may potentially timeout
-        final Result<Void> res = goAuthClient.batchAddPath(req);
-        if (!res.isOk()) {
-            log.error("Failed to report path to goauth, reqs: {}, error code: {}, error msg: {}",
-                    reqList, res.getErrorCode(), res.getMsg());
-            return;
-        }
-        log.info("Reported {} paths to goauth", reqList.size());
     }
 
     protected static void reportPath(AddPathReq ar, GoAuthClient goAuthClient) {

@@ -31,6 +31,7 @@ public class GoAuthClientTest {
         final TestResAccessReq req = new TestResAccessReq();
         req.setUrl("/goauth/open/api/resource/add");
         req.setRoleNo("role_554107924873216177918");
+        req.setMethod("POST");
         final Result<TestResAccessResp> resp = goAuthClient.testResAccess(req);
         resp.assertIsOk();
         final TestResAccessResp r = resp.getData();
@@ -63,15 +64,4 @@ public class GoAuthClientTest {
         log.info("Resp: {}", r);
     }
 
-    @Test
-    public void should_batch_add_path() {
-        final BatchAddPathReq br = new BatchAddPathReq();
-        final AddPathReq ar = new AddPathReq();
-        ar.setUrl("/test/url");
-        ar.setType(PathType.PROTECTED);
-        ar.setGroup("goauth-client-java");
-        br.setReqs(Arrays.asList(ar));
-        final Result<Void> result = goAuthClient.batchAddPath(br);
-        result.assertIsOk();
-    }
 }

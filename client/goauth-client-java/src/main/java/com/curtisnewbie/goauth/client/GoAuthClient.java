@@ -19,9 +19,6 @@ public interface GoAuthClient {
     @PostMapping("/path/add")
     Result<Void> addPath(@RequestBody AddPathReq req);
 
-    @PostMapping("/path/batch/add")
-    Result<Void> batchAddPath(@RequestBody BatchAddPathReq req);
-
     @PostMapping("/role/info")
     Result<RoleInfoResp> getRoleInfo(@RequestBody RoleInfoReq req);
 
