@@ -25,11 +25,12 @@ type RoleInfoResp struct {
 }
 
 type CreatePathReq struct {
-	Type  PathType `json:"type"`
-	Url   string   `json:"url"`
-	Group string   `json:"group"`
-	Desc  string   `json:"desc"`
-	ResCode string `json:"resCode"`
+	Type    PathType `json:"type"`
+	Url     string   `json:"url"`
+	Group   string   `json:"group"`
+	Desc    string   `json:"desc"`
+	ResCode string   `json:"resCode"`
+	Method  string   `json:"method"`
 }
 
 type TestResAccessReq struct {

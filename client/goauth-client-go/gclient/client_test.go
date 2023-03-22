@@ -38,10 +38,11 @@ func TestAddResource(t *testing.T) {
 
 func TestAddPath(t *testing.T) {
 	req := CreatePathReq{
-		Url:   "/test/url/gclient",
-		Type:  PT_PROTECTED,
-		Group: "goauth-client-go",
-		Desc:  "some test path",
+		Url:    "/test/url/gclient",
+		Type:   PT_PROTECTED,
+		Group:  "goauth-client-go",
+		Desc:   "some test path",
+		Method: "POST",
 	}
 
 	e := AddPath(context.Background(), req)
