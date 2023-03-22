@@ -15,10 +15,6 @@ const (
 	PT_PUBLIC    PathType = "PUBLIC"
 )
 
-type BatchCreatePathReq struct {
-	Reqs []CreatePathReq `json:"reqs"`
-}
-
 type RoleInfoReq struct {
 	RoleNo string `json:"roleNo" `
 }
@@ -77,26 +73,6 @@ func TestResourceAccess(ctx context.Context, req TestResAccessReq) (*TestResAcce
 
 func AddResource(ctx context.Context, req AddResourceReq) error {
 	tr := client.NewDynTClient(ctx, "/remote/resource/add", "goauth").
-		PostJson(req)
-
-	if tr.Err != nil {
-		return tr.Err
-	}
-	defer tr.Close()
-
-	var r common.Resp
-	if e := tr.ReadJson(&r); e != nil {
-		return e
-	}
-	if r.Error {
-		return common.NewWebErr(r.Msg)
-	}
-
-	return nil
-}
-
-func BatchAddPath(ctx context.Context, req BatchCreatePathReq) error {
-	tr := client.NewDynTClient(ctx, "/remote/path/batch/add", "goauth").
 		PostJson(req)
 
 	if tr.Err != nil {

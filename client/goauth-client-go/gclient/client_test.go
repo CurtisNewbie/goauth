@@ -36,22 +36,6 @@ func TestAddResource(t *testing.T) {
 	}
 }
 
-func TestBatchAddPath(t *testing.T) {
-	req := CreatePathReq{
-		Url:   "/test/url/gclient",
-		Type:  PT_PROTECTED,
-		Group: "goauth-client-go",
-		Desc:  "some test path",
-	}
-
-	e := BatchAddPath(context.Background(), BatchCreatePathReq{
-		Reqs: []CreatePathReq{req},
-	})
-	if e != nil {
-		t.Fatal(e)
-	}
-}
-
 func TestAddPath(t *testing.T) {
 	req := CreatePathReq{
 		Url:   "/test/url/gclient",
