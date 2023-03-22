@@ -919,7 +919,8 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 	// find resource required for the url
 	cur, e := lookupUrlRes(ec, url, method)
 	if e != nil {
-		return forbidden, e
+		ec.Log.Infof("Rejected '%s', path not found", url)
+		return forbidden, nil
 	}
 
 	// public path type, doesn't require access to resource
