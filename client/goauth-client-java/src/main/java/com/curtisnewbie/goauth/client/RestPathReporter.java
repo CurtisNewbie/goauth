@@ -41,7 +41,7 @@ public class RestPathReporter implements InitializingBean {
                     final List<RestPathScanner.RestPath> filtered = restPaths.stream()
                             .filter(p -> {
                                 String cp = p.getCompletePath();
-                                return !cp.startsWith("/remote") && paths.add(cp);
+                                return !cp.startsWith("/remote") && paths.add((p.httpMethod != null ? p.httpMethod.name() : "") + ":" + cp);
                             })
                             .collect(Collectors.toList());
 
