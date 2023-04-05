@@ -3,7 +3,7 @@ module github.com/curtisnewbie/goauth
 go 1.18
 
 require (
-	github.com/curtisnewbie/gocommon v1.0.3-0.20230319145410-f9678938fec1
+	github.com/curtisnewbie/gocommon v0.0.0-20230405122949-cd933d7d9183
 	github.com/gin-gonic/gin v1.8.1
 	gorm.io/gorm v1.23.8
 )
@@ -21,6 +21,7 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/consul/api v1.15.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.2.0 // indirect

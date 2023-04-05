@@ -7,6 +7,7 @@ import (
 	"github.com/curtisnewbie/goauth/web"
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/server"
+	"github.com/curtisnewbie/gocommon/task"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +23,7 @@ type PathDoc struct {
 
 func main() {
 	ec := common.EmptyExecContext()
-	scheduleJobs()                         // schedule cron jobs
+	scheduleTasks()                         // schedule cron jobs
 	registerWebEndpoints(ec)               // register http server endpoints
 	server.DefaultBootstrapServer(os.Args) // bootstrap server
 }
@@ -179,16 +180,14 @@ func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 	})
 }
 
-func scheduleJobs() {
-	// jobs (with single instance only)
-	common.ScheduleCron("0 0/15 * * * *", func() {
-		ec := common.EmptyExecContext()
+func scheduleTasks() {
+	// distributed tasks
+	task.ScheduleDistributedTask("0 0/15 * * * *", func(ec common.ExecContext) {
 		if e := domain.LoadRoleResCache(ec); e != nil {
 			ec.Log.Errorf("Failed to load role resource, %v", e)
 		}
 	})
-	common.ScheduleCron("0 0/15 * * * *", func() {
-		ec := common.EmptyExecContext()
+	task.ScheduleDistributedTask("0 0/15 * * * *", func(ec common.ExecContext) {
 		if e := domain.LoadPathResCache(ec); e != nil {
 			ec.Log.Errorf("Failed to load path resource, %v", e)
 		}
