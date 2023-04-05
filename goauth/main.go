@@ -171,12 +171,12 @@ func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 
 func scheduleTasks() {
 	// distributed tasks
-	task.ScheduleDistributedTask("0 0/15 * * * *", func(ec common.ExecContext) {
+	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadRoleResCacheTask", func(ec common.ExecContext) {
 		if e := domain.LoadRoleResCache(ec); e != nil {
 			ec.Log.Errorf("Failed to load role resource, %v", e)
 		}
 	})
-	task.ScheduleDistributedTask("0 0/15 * * * *", func(ec common.ExecContext) {
+	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadPathResCacheTask", func(ec common.ExecContext) {
 		if e := domain.LoadPathResCache(ec); e != nil {
 			ec.Log.Errorf("Failed to load path resource, %v", e)
 		}
