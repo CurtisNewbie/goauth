@@ -1,5 +1,7 @@
 mode.production: false
 
+app.name: "goauth"
+
 mysql:
   enabled: true 
   user: "${mysqlusername}"

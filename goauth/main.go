@@ -23,7 +23,7 @@ type PathDoc struct {
 
 func main() {
 	ec := common.EmptyExecContext()
-	scheduleTasks()                         // schedule cron jobs
+	scheduleTasks()                        // schedule cron jobs
 	registerWebEndpoints(ec)               // register http server endpoints
 	server.DefaultBootstrapServer(os.Args) // bootstrap server
 }
@@ -128,17 +128,6 @@ func registerWebEndpoints(ec common.ExecContext) {
 	urlpath = server.OpenApiPath("/path/update")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.PostJ(urlpath, web.UpdatePath)
-
-	/*
-		Generate resource scripts for production environment, for internal use only
-
-		curl -X POST "http://localhost:8081/internal/resource/script/generate" \
-			-H 'content-type:application/json' \
-			-d '{ "resCodes" : ["basic-user", "manage-users"]}' \
-			-o output.sql
-	*/
-	urlpath = "/internal/resource/script/generate"
-	server.RawPost(urlpath, web.GenResourceScript)
 
 	// internal endpoints
 	server.PostJ(server.InternalApiPath("/resource/add"),

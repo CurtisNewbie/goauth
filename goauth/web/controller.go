@@ -3,7 +3,6 @@ package web
 import (
 	"github.com/curtisnewbie/goauth/domain"
 	"github.com/curtisnewbie/gocommon/common"
-	"github.com/curtisnewbie/gocommon/server"
 	"github.com/gin-gonic/gin"
 )
 
@@ -81,17 +80,4 @@ func DeletePath(c *gin.Context, ec common.ExecContext, req domain.DeletePathReq)
 
 func UpdatePath(c *gin.Context, ec common.ExecContext, req domain.UpdatePathReq) (any, error) {
 	return nil, domain.UpdatePath(ec, req)
-}
-
-func GenResourceScript(c *gin.Context) {
-	ec := common.EmptyExecContext()
-	var req domain.GenResScriptReq
-	server.MustBindJson(c, &req)
-	content, e := domain.GenResourceScript(ec, req)
-
-	if e != nil {
-		server.DispatchErrJson(c, e)
-		return
-	}
-	c.Writer.Write([]byte(content))
 }
