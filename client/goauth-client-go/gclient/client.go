@@ -164,6 +164,13 @@ func Post(url string, handler server.TRouteHandler, doc PathDoc) {
 	reportPathOnServerBootstrapted(url, "POST", doc)
 }
 
+
+// Register POST request handler on server and report path to goauth
+func RawPost(url string, handler gin.HandlerFunc, doc PathDoc) {
+	server.RawPost(url, handler)
+	reportPathOnServerBootstrapted(url, "POST", doc)
+}
+
 // Register Json POST request handler and report path to goauth
 func PostJ[T any](url string, handler server.JTRouteHandler[T], doc PathDoc) {
 	server.PostJ(url, handler)
@@ -176,9 +183,22 @@ func Put(url string, handler server.TRouteHandler, doc PathDoc) {
 	reportPathOnServerBootstrapted(url, "PUT", doc)
 }
 
+// Register PUT request handler and report path to goauth
+func RawPut(url string, handler gin.HandlerFunc, doc PathDoc) {
+	server.RawPut(url, handler)
+	reportPathOnServerBootstrapted(url, "PUT", doc)
+}
+
+
 // Register DELETE request handler and report path to goauth
 func Delete(url string, handler server.TRouteHandler, doc PathDoc) {
 	server.Delete(url, handler)
+	reportPathOnServerBootstrapted(url, "DELETE", doc)
+}
+
+// Register DELETE request handler and report path to goauth
+func RawDelete(url string, handler gin.HandlerFunc, doc PathDoc) {
+	server.RawDelete(url, handler)
 	reportPathOnServerBootstrapted(url, "DELETE", doc)
 }
 
