@@ -8,6 +8,7 @@ import (
 	"github.com/curtisnewbie/gocommon/client"
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/server"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
@@ -148,6 +149,12 @@ func GetRoleInfo(ctx context.Context, req RoleInfoReq) (*RoleInfoResp, error) {
 // Register GET request handler on server and report path to goauth
 func Get(url string, handler server.TRouteHandler, doc PathDoc) {
 	server.Get(url, handler)
+	reportPathOnServerBootstrapted(url, "GET", doc)
+}
+
+// Register GET request handler on server and report path to goauth
+func RawGet(url string, handler gin.HandlerFunc, doc PathDoc) {
+	server.RawGet(url, handler)
 	reportPathOnServerBootstrapted(url, "GET", doc)
 }
 

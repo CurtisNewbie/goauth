@@ -3,7 +3,8 @@ module github.com/curtisnewbie/goauth/client/goauth-client-go
 go 1.18
 
 require (
-	github.com/curtisnewbie/gocommon v1.0.3-0.20230201155314-4bf630cac65f
+	github.com/curtisnewbie/gocommon v0.0.0-20230405130857-66448f980c2b
+	github.com/gin-gonic/gin v1.8.1
 	github.com/sirupsen/logrus v1.9.0
 )
 
@@ -13,7 +14,6 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.8.1 // indirect
 	github.com/go-co-op/gocron v1.17.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
@@ -21,6 +21,7 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/consul/api v1.15.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.2.0 // indirect
