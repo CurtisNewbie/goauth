@@ -15,9 +15,9 @@ import (
 type PathType string
 
 type PathDoc struct {
-	Desc   string
-	Type   PathType
-	Code   string
+	Desc string
+	Type PathType
+	Code string
 }
 
 const (
@@ -183,13 +183,13 @@ func Delete(url string, handler server.TRouteHandler, doc PathDoc) {
 }
 
 func reportPathOnServerBootstrapted(url string, method string, doc PathDoc) {
-	app := common.GetPropStr(common.PROP_APP_NAME)
-
-	if !strings.HasPrefix(url, "/") {
-		url = "/" + url
-	}
-
 	server.OnServerBootstrapped(func() {
+		app := common.GetPropStr(common.PROP_APP_NAME)
+
+		if !strings.HasPrefix(url, "/") {
+			url = "/" + url
+		}
+
 		r := CreatePathReq{
 			Method:  method,
 			Group:   app,
@@ -199,7 +199,7 @@ func reportPathOnServerBootstrapted(url string, method string, doc PathDoc) {
 			ResCode: doc.Code,
 		}
 		if e := AddPath(context.Background(), r); e != nil {
-			logrus.Fatal(e)
+			logrus.Fatalf("failed to report path to goauth, %v", e)
 		}
 	})
 }
