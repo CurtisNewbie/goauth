@@ -49,6 +49,7 @@ type AddResourceReq struct {
 
 func TestResourceAccess(ctx context.Context, req TestResAccessReq) (*TestResAccessResp, error) {
 	tr := client.NewDynTClient(ctx, "/remote/path/resource/access-test", "goauth").
+		EnableTracing().
 		PostJson(req)
 
 	if tr.Err != nil {
@@ -74,6 +75,7 @@ func TestResourceAccess(ctx context.Context, req TestResAccessReq) (*TestResAcce
 
 func AddResource(ctx context.Context, req AddResourceReq) error {
 	tr := client.NewDynTClient(ctx, "/remote/resource/add", "goauth").
+		EnableTracing().
 		PostJson(req)
 
 	if tr.Err != nil {
@@ -94,6 +96,7 @@ func AddResource(ctx context.Context, req AddResourceReq) error {
 
 func AddPath(ctx context.Context, req CreatePathReq) error {
 	tr := client.NewDynTClient(ctx, "/remote/path/add", "goauth").
+		EnableTracing().
 		PostJson(req)
 
 	if tr.Err != nil {
@@ -114,6 +117,7 @@ func AddPath(ctx context.Context, req CreatePathReq) error {
 
 func GetRoleInfo(ctx context.Context, req RoleInfoReq) (*RoleInfoResp, error) {
 	tr := client.NewDynTClient(ctx, "/remote/role/info", "goauth").
+		EnableTracing().
 		PostJson(req)
 
 	if tr.Err != nil {
