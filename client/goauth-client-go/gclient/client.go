@@ -3,12 +3,21 @@ package gclient
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/curtisnewbie/gocommon/client"
 	"github.com/curtisnewbie/gocommon/common"
+	"github.com/curtisnewbie/gocommon/server"
+	"github.com/sirupsen/logrus"
 )
 
 type PathType string
+
+type PathDoc struct {
+	Desc   string
+	Type   PathType
+	Code   string
+}
 
 const (
 	PT_PROTECTED PathType = "PROTECTED"
@@ -134,4 +143,56 @@ func GetRoleInfo(ctx context.Context, req RoleInfoReq) (*RoleInfoResp, error) {
 	}
 
 	return r.Data, nil
+}
+
+// Register GET request handler on server and report path to goauth
+func Get(url string, handler server.TRouteHandler, doc PathDoc) {
+	server.Get(url, handler)
+	reportPathOnServerBootstrapted(url, "GET", doc)
+}
+
+// Register POST request handler on server and report path to goauth
+func Post(url string, handler server.TRouteHandler, doc PathDoc) {
+	server.Post(url, handler)
+	reportPathOnServerBootstrapted(url, "POST", doc)
+}
+
+// Register Json POST request handler and report path to goauth
+func PostJ[T any](url string, handler server.JTRouteHandler[T], doc PathDoc) {
+	server.PostJ(url, handler)
+	reportPathOnServerBootstrapted(url, "POST", doc)
+}
+
+// Register PUT request handler and report path to goauth
+func Put(url string, handler server.TRouteHandler, doc PathDoc) {
+	server.Put(url, handler)
+	reportPathOnServerBootstrapted(url, "PUT", doc)
+}
+
+// Register DELETE request handler and report path to goauth
+func Delete(url string, handler server.TRouteHandler, doc PathDoc) {
+	server.Delete(url, handler)
+	reportPathOnServerBootstrapted(url, "DELETE", doc)
+}
+
+func reportPathOnServerBootstrapted(url string, method string, doc PathDoc) {
+	app := common.GetPropStr(common.PROP_APP_NAME)
+
+	if !strings.HasPrefix(url, "/") {
+		url = "/" + url
+	}
+
+	server.OnServerBootstrapped(func() {
+		r := CreatePathReq{
+			Method:  method,
+			Group:   app,
+			Url:     app + url,
+			Type:    doc.Type,
+			Desc:    doc.Code,
+			ResCode: doc.Code,
+		}
+		if e := AddPath(context.Background(), r); e != nil {
+			logrus.Fatal(e)
+		}
+	})
 }
