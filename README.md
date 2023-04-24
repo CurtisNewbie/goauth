@@ -14,7 +14,9 @@ User and resource management service Implemented In Go (For Internal Use).
 Run following command in the source root of your project (where go.mod is at).
 
 ```
-go get -u github.com/curtisnewbie/goauth/client/goauth-client-go
+# For v1.0.1
+
+go get github.com/curtisnewbie/goauth/client/goauth-client-go@e7460b23dbaa
 ```
 
 ### goauth-client-java
