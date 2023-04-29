@@ -1,4 +1,4 @@
-# goauth v1.0.1
+# goauth v1.0.2
 
 User and resource management service Implemented In Go (For Internal Use).
 

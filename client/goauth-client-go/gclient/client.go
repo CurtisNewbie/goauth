@@ -8,7 +8,6 @@ import (
 	"github.com/curtisnewbie/gocommon/client"
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/server"
-	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
@@ -153,7 +152,7 @@ func Get(url string, handler server.TRouteHandler, doc PathDoc) {
 }
 
 // Register GET request handler on server and report path to goauth
-func RawGet(url string, handler gin.HandlerFunc, doc PathDoc) {
+func RawGet(url string, handler server.RawTRouteHandler, doc PathDoc) {
 	server.RawGet(url, handler)
 	reportPathOnServerBootstrapted(url, "GET", doc)
 }
@@ -164,9 +163,8 @@ func Post(url string, handler server.TRouteHandler, doc PathDoc) {
 	reportPathOnServerBootstrapted(url, "POST", doc)
 }
 
-
 // Register POST request handler on server and report path to goauth
-func RawPost(url string, handler gin.HandlerFunc, doc PathDoc) {
+func RawPost(url string, handler server.RawTRouteHandler, doc PathDoc) {
 	server.RawPost(url, handler)
 	reportPathOnServerBootstrapted(url, "POST", doc)
 }
@@ -184,11 +182,10 @@ func Put(url string, handler server.TRouteHandler, doc PathDoc) {
 }
 
 // Register PUT request handler and report path to goauth
-func RawPut(url string, handler gin.HandlerFunc, doc PathDoc) {
+func RawPut(url string, handler server.RawTRouteHandler, doc PathDoc) {
 	server.RawPut(url, handler)
 	reportPathOnServerBootstrapted(url, "PUT", doc)
 }
-
 
 // Register DELETE request handler and report path to goauth
 func Delete(url string, handler server.TRouteHandler, doc PathDoc) {
@@ -197,7 +194,7 @@ func Delete(url string, handler server.TRouteHandler, doc PathDoc) {
 }
 
 // Register DELETE request handler and report path to goauth
-func RawDelete(url string, handler gin.HandlerFunc, doc PathDoc) {
+func RawDelete(url string, handler server.RawTRouteHandler, doc PathDoc) {
 	server.RawDelete(url, handler)
 	reportPathOnServerBootstrapted(url, "DELETE", doc)
 }
