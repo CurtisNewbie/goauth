@@ -17,6 +17,11 @@ Run following command in the source root of your project (where go.mod is at).
 # For v1.0.1
 
 go get github.com/curtisnewbie/goauth/client/goauth-client-go@e7460b23dbaa
+
+
+# For v1.0.2
+
+go get github.com/curtisnewbie/goauth/client/goauth-client-go@927902695f12
 ```
 
 ### goauth-client-java
