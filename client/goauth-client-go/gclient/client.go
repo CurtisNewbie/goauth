@@ -11,6 +11,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// Extra Key (Left in common.StrPair) used when registering HTTP routes using methods like server.GET
+	EXTRA_PATH_DOC = "PATH_DOC"
+
+	// Property Key for enabling GoAuth Client, by default it's true
+	//
+	// goauth-client-go doesn't use it internally, it's only useful for the Callers
+	PROP_ENABLE_GOAUTH_CLIENT = "goauth.client.enabled"
+)
+
+func init() {
+	common.SetDefProp(PROP_ENABLE_GOAUTH_CLIENT, true)
+}
+
 type PathType string
 
 type PathDoc struct {
@@ -56,6 +70,7 @@ type AddResourceReq struct {
 	Code string `json:"code"`
 }
 
+// Test whether this role has access to the url
 func TestResourceAccess(ctx context.Context, req TestResAccessReq) (*TestResAccessResp, error) {
 	tr := client.NewDynTClient(ctx, "/remote/path/resource/access-test", "goauth").
 		EnableTracing().
@@ -82,6 +97,7 @@ func TestResourceAccess(ctx context.Context, req TestResAccessReq) (*TestResAcce
 	return r.Data, nil
 }
 
+// Create resource
 func AddResource(ctx context.Context, req AddResourceReq) error {
 	tr := client.NewDynTClient(ctx, "/remote/resource/add", "goauth").
 		EnableTracing().
@@ -99,10 +115,11 @@ func AddResource(ctx context.Context, req AddResourceReq) error {
 	if r.Error {
 		return common.NewWebErr(r.Msg)
 	}
-
+	logrus.Infof("Reported resource, Name: %s, Code: %s", req.Name, req.Code)
 	return nil
 }
 
+// Report path
 func AddPath(ctx context.Context, req CreatePathReq) error {
 	tr := client.NewDynTClient(ctx, "/remote/path/add", "goauth").
 		EnableTracing().
@@ -124,6 +141,7 @@ func AddPath(ctx context.Context, req CreatePathReq) error {
 	return nil
 }
 
+// Retrieve role information
 func GetRoleInfo(ctx context.Context, req RoleInfoReq) (*RoleInfoResp, error) {
 	tr := client.NewDynTClient(ctx, "/remote/role/info", "goauth").
 		EnableTracing().
@@ -145,78 +163,65 @@ func GetRoleInfo(ctx context.Context, req RoleInfoReq) (*RoleInfoResp, error) {
 	return r.Data, nil
 }
 
-// Register GET request handler on server and report path to goauth
-func Get(url string, handler server.TRouteHandler, doc PathDoc) {
-	server.Get(url, handler)
-	reportPathOnServerBootstrapted(url, "GET", doc)
+func IsEnabled() bool {
+	return common.GetPropBool(PROP_ENABLE_GOAUTH_CLIENT)
 }
 
-// Register GET request handler on server and report path to goauth
-func RawGet(url string, handler server.RawTRouteHandler, doc PathDoc) {
-	server.RawGet(url, handler)
-	reportPathOnServerBootstrapted(url, "GET", doc)
+func PathDocExtra(doc PathDoc) common.StrPair {
+	return common.StrPair{Left: EXTRA_PATH_DOC, Right: doc}
 }
 
-// Register POST request handler on server and report path to goauth
-func Post(url string, handler server.TRouteHandler, doc PathDoc) {
-	server.Post(url, handler)
-	reportPathOnServerBootstrapted(url, "POST", doc)
-}
-
-// Register POST request handler on server and report path to goauth
-func RawPost(url string, handler server.RawTRouteHandler, doc PathDoc) {
-	server.RawPost(url, handler)
-	reportPathOnServerBootstrapted(url, "POST", doc)
-}
-
-// Register Json POST request handler and report path to goauth
-func PostJ[T any](url string, handler server.JTRouteHandler[T], doc PathDoc) {
-	server.PostJ(url, handler)
-	reportPathOnServerBootstrapted(url, "POST", doc)
-}
-
-// Register PUT request handler and report path to goauth
-func Put(url string, handler server.TRouteHandler, doc PathDoc) {
-	server.Put(url, handler)
-	reportPathOnServerBootstrapted(url, "PUT", doc)
-}
-
-// Register PUT request handler and report path to goauth
-func RawPut(url string, handler server.RawTRouteHandler, doc PathDoc) {
-	server.RawPut(url, handler)
-	reportPathOnServerBootstrapted(url, "PUT", doc)
-}
-
-// Register DELETE request handler and report path to goauth
-func Delete(url string, handler server.TRouteHandler, doc PathDoc) {
-	server.Delete(url, handler)
-	reportPathOnServerBootstrapted(url, "DELETE", doc)
-}
-
-// Register DELETE request handler and report path to goauth
-func RawDelete(url string, handler server.RawTRouteHandler, doc PathDoc) {
-	server.RawDelete(url, handler)
-	reportPathOnServerBootstrapted(url, "DELETE", doc)
-}
-
-func reportPathOnServerBootstrapted(url string, method string, doc PathDoc) {
+// Register a hook to report paths to GoAuth on server bootstrapped
+//
+// When using methods like server.Get(...), the extra field should contains a
+// common.StrPair where the key is EXTRA_PATH_DOC, so that the PathDoc can be picked
+// and reported to GoAuth
+//
+// For example:
+//
+//	server.Get(url, handler, gclient.PathDocExtra(pathDoc))
+//
+// This func also reads property 'goauth.client.enabled'. If the client is not enabled,
+// it returns immediately
+func ReportPathsOnBootstrapped() {
 	server.OnServerBootstrapped(func() {
+		c := common.EmptyExecContext()
 		app := common.GetPropStr(common.PROP_APP_NAME)
+		routes := server.GetHttpRoutes()
 
-		if !strings.HasPrefix(url, "/") {
-			url = "/" + url
-		}
+		for _, r := range routes {
 
-		r := CreatePathReq{
-			Method:  method,
-			Group:   app,
-			Url:     app + url,
-			Type:    doc.Type,
-			Desc:    doc.Code,
-			ResCode: doc.Code,
-		}
-		if e := AddPath(context.Background(), r); e != nil {
-			logrus.Fatalf("failed to report path to goauth, %v", e)
+			v, ok := r.Extra[EXTRA_PATH_DOC]
+			if !ok {
+				continue
+			}
+
+			doc, ok := v.(PathDoc)
+			if !ok {
+				continue
+			}
+
+			url := r.Url
+			method := r.Method
+
+			if !strings.HasPrefix(url, "/") {
+				url = "/" + url
+			}
+
+			r := CreatePathReq{
+				Method:  method,
+				Group:   app,
+				Url:     app + url,
+				Type:    doc.Type,
+				Desc:    doc.Desc,
+				ResCode: doc.Code,
+			}
+
+			if e := AddPath(context.Background(), r); e != nil {
+				logrus.Fatalf("failed to report path to goauth, %v", e)
+			}
+
+			c.Log.Infof("Reported Path: %-6s %-50s Type: %-10s ResCode: %s Desc: %s", r.Method, r.Url, r.Type, r.ResCode, r.Desc)
 		}
 	})
 }

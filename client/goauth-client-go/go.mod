@@ -3,7 +3,7 @@ module github.com/curtisnewbie/goauth/client/goauth-client-go
 go 1.18
 
 require (
-	github.com/curtisnewbie/gocommon v1.0.5
+	github.com/curtisnewbie/gocommon v1.0.6
 	github.com/sirupsen/logrus v1.9.0
 )
 
