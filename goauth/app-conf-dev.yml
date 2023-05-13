@@ -1,12 +1,12 @@
-mode.production: false
+mode.production: true
 
 app.name: "goauth"
 
 mysql:
   enabled: true 
   user: root
-  password: 123456
-  database: fileServer
+#   password: 123456
+  database: fileserver
   host: localhost
   port: 3306
 
@@ -19,6 +19,7 @@ redis:
   database: 0
 
 server: 
+  web.enabled: true
   host: localhost
   port: 8081
   gracefulShutdownTimeSec: 5
