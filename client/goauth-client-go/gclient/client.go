@@ -212,6 +212,10 @@ func ReportPathsOnBootstrapped() {
 				url = "/" + url
 			}
 
+			if doc.Type == "" {
+				doc.Type = PT_PROTECTED
+			}
+
 			r := CreatePathReq{
 				Method:  method,
 				Group:   app,
