@@ -184,9 +184,6 @@ func PathDocExtra(doc PathDoc) common.StrPair {
 // For example:
 //
 //	server.Get(url, handler, gclient.PathDocExtra(pathDoc))
-//
-// This func also reads property 'goauth.client.enabled'. If the client is not enabled,
-// it returns immediately
 func ReportPathsOnBootstrapped() {
 	server.OnServerBootstrapped(func() {
 		c := common.EmptyExecContext()
