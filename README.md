@@ -12,6 +12,9 @@ User and resource management service Implemented In Go (For Internal Use).
 ### goauth-client-go
 
 ```sh
+# v1.0.6
+go get github.com/curtisnewbie/goauth/client/goauth-client-go@a18d18a930c5
+
 # v1.0.5
 go get github.com/curtisnewbie/goauth/client/goauth-client-go@d311b8e77778
 
