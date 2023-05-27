@@ -23,9 +23,9 @@ type PathDoc struct {
 
 func main() {
 	ec := common.EmptyExecContext()
-	scheduleTasks()                        // schedule cron jobs
-	registerWebEndpoints(ec)               // register http server endpoints
-	server.DefaultBootstrapServer(os.Args) // bootstrap server
+	scheduleTasks()                            // schedule cron jobs
+	registerWebEndpoints(ec)                   // register http server endpoints
+	server.DefaultBootstrapServer(os.Args, ec) // bootstrap server
 }
 
 func registerWebEndpoints(ec common.ExecContext) {
@@ -53,7 +53,7 @@ func registerWebEndpoints(ec common.ExecContext) {
 
 	urlpath = server.OpenApiPath("/role/info")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "Get role info", Method: "POST"})
-	server.PostJ(urlpath, web.GetRoleInfo)
+	server.IPost(urlpath, web.GetRoleInfo)
 
 	/*
 		------------------------------
@@ -64,11 +64,11 @@ func registerWebEndpoints(ec common.ExecContext) {
 	*/
 	urlpath = server.OpenApiPath("/resource/add")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.CreateResourceIfNotExist)
+	server.IPost(urlpath, web.CreateResourceIfNotExist)
 
 	urlpath = server.OpenApiPath("/resource/remove")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.DeleteResource)
+	server.IPost(urlpath, web.DeleteResource)
 
 	urlpath = server.OpenApiPath("/resource/brief/candidates")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: CODE_MNG_RESOURCES,
@@ -77,25 +77,25 @@ func registerWebEndpoints(ec common.ExecContext) {
 
 	urlpath = server.OpenApiPath("/resource/list")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.ListResources)
+	server.IPost(urlpath, web.ListResources)
 
 	urlpath = server.OpenApiPath("/role/resource/add")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
-	server.PostJ(urlpath, web.AddResToRoleIfNotExist)
+	server.IPost(urlpath, web.AddResToRoleIfNotExist)
 
 	urlpath = server.OpenApiPath("/role/resource/remove")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
-	server.PostJ(urlpath, web.RemoveResFromRole)
+	server.IPost(urlpath, web.RemoveResFromRole)
 
 	urlpath = server.OpenApiPath("/role/add")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.AddRole)
+	server.IPost(urlpath, web.AddRole)
 
 	urlpath = server.OpenApiPath("/role/list")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.ListRoles)
+	server.IPost(urlpath, web.ListRoles)
 
 	urlpath = server.OpenApiPath("/role/brief/all")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: CODE_MNG_RESOURCES,
@@ -105,44 +105,44 @@ func registerWebEndpoints(ec common.ExecContext) {
 	urlpath = server.OpenApiPath("/role/resource/list")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
-	server.PostJ(urlpath, web.ListRoleRes)
+	server.IPost(urlpath, web.ListRoleRes)
 
 	urlpath = server.OpenApiPath("/path/list")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.ListPaths)
+	server.IPost(urlpath, web.ListPaths)
 
 	urlpath = server.OpenApiPath("/path/resource/bind")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
-	server.PostJ(urlpath, web.BindPathRes)
+	server.IPost(urlpath, web.BindPathRes)
 
 	urlpath = server.OpenApiPath("/path/resource/unbind")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
-	server.PostJ(urlpath, web.UnbindPathRes)
+	server.IPost(urlpath, web.UnbindPathRes)
 
 	urlpath = server.OpenApiPath("/path/delete")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.DeletePath)
+	server.IPost(urlpath, web.DeletePath)
 
 	urlpath = server.OpenApiPath("/path/update")
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: CODE_MNG_RESOURCES, Method: "POST"})
-	server.PostJ(urlpath, web.UpdatePath)
+	server.IPost(urlpath, web.UpdatePath)
 
 	// internal endpoints
-	server.PostJ(server.InternalApiPath("/resource/add"),
+	server.IPost(server.InternalApiPath("/resource/add"),
 		func(c *gin.Context, ec common.ExecContext, req domain.CreateResReq) (any, error) {
 			return nil, domain.CreateResourceIfNotExist(ec, req)
 		})
-	server.PostJ(server.InternalApiPath("/path/resource/access-test"),
+	server.IPost(server.InternalApiPath("/path/resource/access-test"),
 		func(c *gin.Context, ec common.ExecContext, req domain.TestResAccessReq) (any, error) {
 			return domain.TestResourceAccess(ec, req)
 		})
-	server.PostJ(server.InternalApiPath("/path/add"),
+	server.IPost(server.InternalApiPath("/path/add"),
 		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
 			return nil, domain.CreatePathIfNotExist(ec, req)
 		})
-	server.PostJ(server.InternalApiPath("/role/info"),
+	server.IPost(server.InternalApiPath("/role/info"),
 		func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
 			return domain.GetRoleInfo(ec, req)
 		})

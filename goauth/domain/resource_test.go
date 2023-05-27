@@ -11,7 +11,7 @@ import (
 )
 
 func before(t *testing.T) {
-	common.LoadConfigFromFile("../app-conf-dev.yml")
+	common.LoadConfigFromFile("../app-conf-dev.yml", common.EmptyExecContext())
 	if _, e := redis.InitRedisFromProp(); e != nil {
 		t.Fatal(e)
 	}

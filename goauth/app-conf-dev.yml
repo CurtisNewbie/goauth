@@ -3,29 +3,29 @@ mode.production: true
 app.name: "goauth"
 
 mysql:
-  enabled: true 
+  enabled: true
   user: root
-#   password: 123456
-  database: fileserver
+  password: 123456
+  database: fileServer
   host: localhost
   port: 3306
 
 redis:
-  enabled: true 
+  enabled: true
   address: localhost
   port: 6379
-  username: 
-  password: 
+  username:
+  password:
   database: 0
 
-server: 
+server:
   web.enabled: true
   host: localhost
   port: 8081
   gracefulShutdownTimeSec: 5
 
-consul: 
-  enabled: true 
+consul:
+  enabled: true
   registerName: goauth
   consulAddress: localhost:8500
   healthCheckUrl: /health
@@ -36,7 +36,7 @@ consul:
 rabbitmq:
   enabled: false
   host: localhost
-  port: 5672 
+  port: 5672
   username: guest
   password: guest
   vhost: "/"
