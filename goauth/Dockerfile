@@ -22,7 +22,7 @@ COPY . .
 RUN go build -o ./main
 
 # script (for io redirection stuff)
-# COPY run.sh ./ 
+# COPY run.sh ./
 RUN chmod +x run.sh
 
-CMD ["sh", "run.sh"]
+CMD ["./main", "app.name=goauth", "profile=prod", "configFile=/usr/src/goauth/config/app-conf-prod.yml"]
