@@ -1,10 +1,9 @@
-FROM golang:1.18
-LABEL author="yongjie.zhuang"
+FROM golang:1.18-alpine as build
+LABEL author="Yongjie Zhuang"
 LABEL descrption="Goauth - Resource mangement & authorization service"
 
-ENV TZ=Asia/Shanghai
-
-WORKDIR /usr/src/goauth
+RUN apk --no-cache add tzdata
+WORKDIR /go/src/build/
 
 # for golang env
 RUN go env -w GO111MODULE=on
@@ -18,11 +17,13 @@ RUN go mod download
 
 # build executable
 COPY . .
+RUN go build -o main
 
-RUN go build -o ./main
+# -------------------------------------------------------------
 
-# script (for io redirection stuff)
-# COPY run.sh ./
-RUN chmod +x run.sh
-
+FROM alpine:3.17
+WORKDIR /usr/src/
+COPY --from=build /go/src/build/main ./main
+COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
+ENV TZ=Asia/Shanghai
 CMD ["./main", "app.name=goauth", "profile=prod", "configFile=/usr/src/goauth/config/app-conf-prod.yml"]
