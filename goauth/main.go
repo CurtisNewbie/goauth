@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/curtisnewbie/goauth/domain"
@@ -22,15 +23,18 @@ type PathDoc struct {
 }
 
 func main() {
-	ec := common.EmptyExecContext()
-	scheduleTasks()                            // schedule cron jobs
-	registerWebEndpoints(ec)                   // register http server endpoints
-	server.DefaultBootstrapServer(os.Args, ec) // bootstrap server
+	server.BeforeServerBootstrap(func(c common.ExecContext) error {
+		scheduleTasks()         // schedule cron jobs
+		registerWebEndpoints(c) // register http server endpoints
+		return nil
+	})
+
+	server.DefaultBootstrapServer(os.Args, common.EmptyExecContext()) // bootstrap server
 }
 
 func registerWebEndpoints(ec common.ExecContext) {
-	server.OnServerBootstrapped(func() {
-		domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
+	server.OnServerBootstrapped(func(c common.ExecContext) error {
+		return domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
 			Code: CODE_MNG_RESOURCES,
 			Name: NAME_MNG_RESOURCES,
 		})
@@ -149,7 +153,7 @@ func registerWebEndpoints(ec common.ExecContext) {
 }
 
 func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
-	server.OnServerBootstrapped(func() {
+	server.OnServerBootstrapped(func(c common.ExecContext) error {
 		ptype := doc.Type
 		desc := doc.Desc
 		resCode := doc.Code
@@ -163,36 +167,32 @@ func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 			Url:     "/goauth" + url,
 			ResCode: resCode,
 		}
-		if e := domain.CreatePathIfNotExist(ec, r); e != nil {
-			ec.Log.Fatal(e)
-		}
+		return domain.CreatePathIfNotExist(ec, r)
 	})
 }
 
 func scheduleTasks() {
 	// distributed tasks
-	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadRoleResCacheTask", func(ec common.ExecContext) {
-		if e := domain.LoadRoleResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load role resource, %v", e)
-		}
+	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadRoleResCacheTask", func(ec common.ExecContext) error {
+		return domain.LoadRoleResCache(ec)
 	})
-	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadPathResCacheTask", func(ec common.ExecContext) {
-		if e := domain.LoadPathResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load path resource, %v", e)
-		}
+	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadPathResCacheTask", func(ec common.ExecContext) error {
+		return domain.LoadPathResCache(ec)
 	})
 
 	// for the first time
-	server.OnServerBootstrapped(func() {
+	server.OnServerBootstrapped(func(c common.ExecContext) error {
 		ec := common.EmptyExecContext()
 		if e := domain.LoadRoleResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load role resource, %v", e)
+			return fmt.Errorf("failed to load role resource, %v", e)
 		}
+		return nil
 	})
-	server.OnServerBootstrapped(func() {
+	server.OnServerBootstrapped(func(c common.ExecContext) error {
 		ec := common.EmptyExecContext()
 		if e := domain.LoadPathResCache(ec); e != nil {
-			ec.Log.Errorf("Failed to load path resource, %v", e)
+			return fmt.Errorf("failed to load path resource, %v", e)
 		}
+		return nil
 	})
 }

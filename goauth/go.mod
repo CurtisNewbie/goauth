@@ -3,7 +3,7 @@ module github.com/curtisnewbie/goauth
 go 1.18
 
 require (
-	github.com/curtisnewbie/gocommon v1.0.9
+	github.com/curtisnewbie/gocommon v0.0.0-20230611074056-de29cf23e37d
 	github.com/gin-gonic/gin v1.8.1
 	gorm.io/gorm v1.23.8
 )
