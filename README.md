@@ -9,7 +9,7 @@ User and resource management service Implemented In Go (For Internal Use).
 
 ## Client Lib Integration
 
-### goauth-client-go
+### goauth-client-go (Deprecated)
 
 ```sh
 # v1.0.6
