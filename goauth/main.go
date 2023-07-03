@@ -23,17 +23,17 @@ type PathDoc struct {
 }
 
 func main() {
-	server.BeforeServerBootstrap(func(c common.ExecContext) error {
+	server.PreServerBootstrap(func(c common.ExecContext) error {
 		scheduleTasks()         // schedule cron jobs
 		registerWebEndpoints(c) // register http server endpoints
 		return nil
 	})
 
-	server.DefaultBootstrapServer(os.Args, common.EmptyExecContext()) // bootstrap server
+	server.BootstrapServer(os.Args)
 }
 
 func registerWebEndpoints(ec common.ExecContext) {
-	server.OnServerBootstrapped(func(c common.ExecContext) error {
+	server.PreServerBootstrap(func(c common.ExecContext) error {
 		return domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
 			Code: CODE_MNG_RESOURCES,
 			Name: NAME_MNG_RESOURCES,
@@ -153,7 +153,7 @@ func registerWebEndpoints(ec common.ExecContext) {
 }
 
 func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
-	server.OnServerBootstrapped(func(c common.ExecContext) error {
+	server.PreServerBootstrap(func(c common.ExecContext) error {
 		ptype := doc.Type
 		desc := doc.Desc
 		resCode := doc.Code
@@ -181,14 +181,14 @@ func scheduleTasks() {
 	})
 
 	// for the first time
-	server.OnServerBootstrapped(func(c common.ExecContext) error {
+	server.PreServerBootstrap(func(c common.ExecContext) error {
 		ec := common.EmptyExecContext()
 		if e := domain.LoadRoleResCache(ec); e != nil {
 			return fmt.Errorf("failed to load role resource, %v", e)
 		}
 		return nil
 	})
-	server.OnServerBootstrapped(func(c common.ExecContext) error {
+	server.PreServerBootstrap(func(c common.ExecContext) error {
 		ec := common.EmptyExecContext()
 		if e := domain.LoadPathResCache(ec); e != nil {
 			return fmt.Errorf("failed to load path resource, %v", e)

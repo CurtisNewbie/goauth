@@ -18,6 +18,8 @@ import (
 var (
 	permitted = TestResAccessResp{Valid: true}
 	forbidden = TestResAccessResp{Valid: false}
+
+	roleInfoCache = redis.NewLazyObjectRCache[RoleInfoResp](10 * time.Minute)
 )
 
 type PathType string
@@ -322,7 +324,7 @@ func ListResourceCandidatesForRole(ec common.ExecContext, roleNo string) ([]ResB
 
 	var res []ResBrief
 	tx := mysql.GetMySql().
-		Raw(`select r.name, r.code from resource r 
+		Raw(`select r.name, r.code from resource r
 			where not exists (select * from role_resource where role_no = ? and res_code = r.code)`, roleNo).
 		Scan(&res)
 	if tx.Error != nil {
@@ -425,16 +427,19 @@ func loadOnePathResCacheAsync(ec common.ExecContext, pathNo string) {
 }
 
 func GetRoleInfo(ec common.ExecContext, req RoleInfoReq) (RoleInfoResp, error) {
-	var resp RoleInfoResp
-	tx := mysql.GetMySql().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
-	if tx.Error != nil {
-		return resp, tx.Error
-	}
+	resp, _, err := roleInfoCache.GetElse(ec, req.RoleNo, func() (RoleInfoResp, bool, error) {
+		var resp RoleInfoResp
+		tx := mysql.GetMySql().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
+		if tx.Error != nil {
+			return resp, false, tx.Error
+		}
 
-	if tx.RowsAffected < 1 {
-		return resp, common.NewWebErrCode(EC_ROLE_NOT_FOUND, "Role not found")
-	}
-	return resp, tx.Error
+		if tx.RowsAffected < 1 {
+			return resp, false, common.NewWebErrCode(EC_ROLE_NOT_FOUND, "Role not found")
+		}
+		return resp, true, nil
+	})
+	return resp, err
 }
 
 func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
@@ -785,7 +790,7 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
 	tx := mysql.GetMySql().
-		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr 
+		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr
 			left join resource r on rr.res_code = r.code
 			where rr.role_no = ? order by rr.id desc limit ?, ?`, req.RoleNo, req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&res)
@@ -800,7 +805,7 @@ func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, er
 
 	var count int
 	tx = mysql.GetMySql().
-		Raw(`select count(*) from role_resource rr 
+		Raw(`select count(*) from role_resource rr
 			left join resource r on rr.res_code = r.code
 			where rr.role_no = ?`, req.RoleNo).
 		Scan(&count)
