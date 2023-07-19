@@ -18,6 +18,8 @@ import (
 var (
 	permitted = TestResAccessResp{Valid: true}
 	forbidden = TestResAccessResp{Valid: false}
+
+	roleInfoCache = redis.NewLazyObjectRCache[RoleInfoResp](10 * time.Minute)
 )
 
 type PathType string
@@ -425,16 +427,19 @@ func loadOnePathResCacheAsync(ec common.ExecContext, pathNo string) {
 }
 
 func GetRoleInfo(ec common.ExecContext, req RoleInfoReq) (RoleInfoResp, error) {
-	var resp RoleInfoResp
-	tx := mysql.GetMySql().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
-	if tx.Error != nil {
-		return resp, tx.Error
-	}
+	resp, _, err := roleInfoCache.GetElse(ec, req.RoleNo, func() (RoleInfoResp, bool, error) {
+		var resp RoleInfoResp
+		tx := mysql.GetMySql().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
+		if tx.Error != nil {
+			return resp, false, tx.Error
+		}
 
-	if tx.RowsAffected < 1 {
-		return resp, common.NewWebErrCode(EC_ROLE_NOT_FOUND, "Role not found")
-	}
-	return resp, tx.Error
+		if tx.RowsAffected < 1 {
+			return resp, false, common.NewWebErrCode(EC_ROLE_NOT_FOUND, "Role not found")
+		}
+		return resp, true, nil
+	})
+	return resp, err
 }
 
 func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
