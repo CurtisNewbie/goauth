@@ -322,7 +322,7 @@ func ListResourceCandidatesForRole(ec common.ExecContext, roleNo string) ([]ResB
 
 	var res []ResBrief
 	tx := mysql.GetMySql().
-		Raw(`select r.name, r.code from resource r 
+		Raw(`select r.name, r.code from resource r
 			where not exists (select * from role_resource where role_no = ? and res_code = r.code)`, roleNo).
 		Scan(&res)
 	if tx.Error != nil {
@@ -785,7 +785,7 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
 	tx := mysql.GetMySql().
-		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr 
+		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr
 			left join resource r on rr.res_code = r.code
 			where rr.role_no = ? order by rr.id desc limit ?, ?`, req.RoleNo, req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&res)
@@ -800,7 +800,7 @@ func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, er
 
 	var count int
 	tx = mysql.GetMySql().
-		Raw(`select count(*) from role_resource rr 
+		Raw(`select count(*) from role_resource rr
 			left join resource r on rr.res_code = r.code
 			where rr.role_no = ?`, req.RoleNo).
 		Scan(&count)
@@ -861,7 +861,7 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 	// find resource required for the url
 	cur, e := lookupUrlRes(ec, url, method)
 	if e != nil {
-		ec.Log.Infof("Rejected '%s', path not found", url)
+		ec.Log.Infof("Rejected '%s' (%s), path not found", url, method)
 		return forbidden, nil
 	}
 
@@ -1086,16 +1086,16 @@ func findPathRes(pathNo string) (ExtendedPathRes, error) {
 }
 
 // global lock for resources
-func lockResourceGlobal(ec common.ExecContext, runnable redis.LRunnable) (any, error) {
+func lockResourceGlobal(ec common.ExecContext, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:resource:global", runnable)
 }
 
 // lock for path
-func lockPath(ec common.ExecContext, pathNo string, runnable redis.LRunnable) (any, error) {
+func lockPath(ec common.ExecContext, pathNo string, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:path:"+pathNo, runnable)
 }
 
 // lock for role-resource cache
-func lockRoleResCache(ec common.ExecContext, runnable redis.LRunnable) (any, error) {
+func lockRoleResCache(ec common.ExecContext, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:role:res:cache", runnable)
 }
