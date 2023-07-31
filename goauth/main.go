@@ -173,10 +173,10 @@ func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 
 func scheduleTasks() {
 	// distributed tasks
-	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadRoleResCacheTask", func(ec common.ExecContext) error {
+	task.ScheduleNamedDistributedTask("0/5 * * * *", false, "LoadRoleResCacheTask", func(ec common.ExecContext) error {
 		return domain.LoadRoleResCache(ec)
 	})
-	task.ScheduleNamedDistributedTask("0 0/15 * * * *", "LoadPathResCacheTask", func(ec common.ExecContext) error {
+	task.ScheduleNamedDistributedTask("0/5 * * * *", false, "LoadPathResCacheTask", func(ec common.ExecContext) error {
 		return domain.LoadPathResCache(ec)
 	})
 
