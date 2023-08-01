@@ -174,13 +174,13 @@ func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 
 func scheduleTasks() {
 	// distributed tasks
-	var err error = task.ScheduleNamedDistributedTask("0/15 * * * *", false, "LoadRoleResCacheTask", func(ec common.ExecContext) error {
+	var err error = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec common.ExecContext) error {
 		return domain.LoadRoleResCache(ec)
 	})
 	if err != nil {
 		logrus.Fatalf("Schedule task failed, %v", err)
 	}
-	err = task.ScheduleNamedDistributedTask("0/15 * * * *", false, "LoadPathResCacheTask", func(ec common.ExecContext) error {
+	err = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec common.ExecContext) error {
 		return domain.LoadPathResCache(ec)
 	})
 	if err != nil {
