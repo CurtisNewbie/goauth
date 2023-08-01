@@ -2,9 +2,12 @@ module github.com/curtisnewbie/goauth
 
 go 1.18
 
+replace github.com/curtisnewbie/gocommon => /Users/photon/dev/git/gocommon
+
 require (
-	github.com/curtisnewbie/gocommon v1.0.13-0.20230731184726-ab46cd950167
+	github.com/curtisnewbie/gocommon v0.0.0-20230801101423-24b75162cb7d
 	github.com/gin-gonic/gin v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	gorm.io/gorm v1.23.8
 )
 
@@ -47,7 +50,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/rabbitmq/amqp091-go v1.5.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

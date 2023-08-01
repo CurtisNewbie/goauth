@@ -50,3 +50,5 @@ tracing.propagation.keys:
 
 # logging.rolling.file:
 #   "goauth.log"
+
+logging.level: info

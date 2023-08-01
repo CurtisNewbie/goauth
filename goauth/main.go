@@ -10,6 +10,7 @@ import (
 	"github.com/curtisnewbie/gocommon/server"
 	"github.com/curtisnewbie/gocommon/task"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 const CODE_MNG_RESOURCES = "manage-resources"
@@ -173,12 +174,18 @@ func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 
 func scheduleTasks() {
 	// distributed tasks
-	task.ScheduleNamedDistributedTask("0/5 * * * *", false, "LoadRoleResCacheTask", func(ec common.ExecContext) error {
+	var err error = task.ScheduleNamedDistributedTask("0/1 * * * *", false, "LoadRoleResCacheTask", func(ec common.ExecContext) error {
 		return domain.LoadRoleResCache(ec)
 	})
-	task.ScheduleNamedDistributedTask("0/5 * * * *", false, "LoadPathResCacheTask", func(ec common.ExecContext) error {
+	if err != nil {
+		logrus.Fatalf("Schedule task failed, %v", err)
+	}
+	err = task.ScheduleNamedDistributedTask("0/1 * * * *", false, "LoadPathResCacheTask", func(ec common.ExecContext) error {
 		return domain.LoadPathResCache(ec)
 	})
+	if err != nil {
+		logrus.Fatalf("Schedule task failed, %v", err)
+	}
 
 	// for the first time
 	server.PostServerBootstrapped(func(c common.ExecContext) error {

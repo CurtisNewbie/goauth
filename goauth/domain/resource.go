@@ -453,7 +453,7 @@ func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 		}
 
 		if id > 0 {
-			ec.Log.Infof("Resource '%s' (%s) already exist", req.Code, req.Name)
+			ec.Log.Debugf("Resource '%s' (%s) already exist", req.Code, req.Name)
 			return nil, nil
 		}
 
@@ -491,7 +491,7 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			return false, tx.Error
 		}
 		if id > 0 { // exists already
-			ec.Log.Infof("Path '%s' (%s) already exists", req.Url, pathNo)
+			ec.Log.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
 			return false, nil
 		}
 
