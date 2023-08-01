@@ -2,8 +2,6 @@ module github.com/curtisnewbie/goauth
 
 go 1.18
 
-replace github.com/curtisnewbie/gocommon => /Users/photon/dev/git/gocommon
-
 require (
 	github.com/curtisnewbie/gocommon v0.0.0-20230801101423-24b75162cb7d
 	github.com/gin-gonic/gin v1.8.1
