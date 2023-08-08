@@ -24,7 +24,7 @@ type PathDoc struct {
 }
 
 func main() {
-	server.PreServerBootstrap(func(c common.ExecContext) error {
+	server.PreServerBootstrap(func(c common.Rail) error {
 		scheduleTasks()         // schedule cron jobs
 		registerWebEndpoints(c) // register http server endpoints
 		return nil
@@ -33,12 +33,12 @@ func main() {
 	server.BootstrapServer(os.Args) // bootstrap server
 }
 
-func registerWebEndpoints(ec common.ExecContext) {
-	server.PostServerBootstrapped(func(c common.ExecContext) error {
+func registerWebEndpoints(ec common.Rail) {
+	server.PostServerBootstrapped(func(c common.Rail) error {
 		return domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
 			Code: CODE_MNG_RESOURCES,
 			Name: NAME_MNG_RESOURCES,
-		})
+		}, common.NilUser())
 	})
 
 	/*
@@ -136,25 +136,28 @@ func registerWebEndpoints(ec common.ExecContext) {
 
 	// internal endpoints
 	server.IPost(server.InternalApiPath("/resource/add"),
-		func(c *gin.Context, ec common.ExecContext, req domain.CreateResReq) (any, error) {
-			return nil, domain.CreateResourceIfNotExist(ec, req)
+		func(c *gin.Context, ec common.Rail, req domain.CreateResReq) (any, error) {
+
+			user := server.ExtractUser(c)
+			return nil, domain.CreateResourceIfNotExist(ec, req, user)
 		})
 	server.IPost(server.InternalApiPath("/path/resource/access-test"),
-		func(c *gin.Context, ec common.ExecContext, req domain.TestResAccessReq) (any, error) {
+		func(c *gin.Context, ec common.Rail, req domain.TestResAccessReq) (any, error) {
 			return domain.TestResourceAccess(ec, req)
 		})
 	server.IPost(server.InternalApiPath("/path/add"),
-		func(c *gin.Context, ec common.ExecContext, req domain.CreatePathReq) (any, error) {
-			return nil, domain.CreatePathIfNotExist(ec, req)
+		func(c *gin.Context, ec common.Rail, req domain.CreatePathReq) (any, error) {
+			user := server.ExtractUser(c)
+			return nil, domain.CreatePathIfNotExist(ec, req, user)
 		})
 	server.IPost(server.InternalApiPath("/role/info"),
-		func(c *gin.Context, ec common.ExecContext, req domain.RoleInfoReq) (any, error) {
+		func(c *gin.Context, ec common.Rail, req domain.RoleInfoReq) (any, error) {
 			return domain.GetRoleInfo(ec, req)
 		})
 }
 
-func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
-	server.PostServerBootstrapped(func(c common.ExecContext) error {
+func reportPathOnBootstrapped(ec common.Rail, url string, doc PathDoc) {
+	server.PostServerBootstrapped(func(c common.Rail) error {
 		ptype := doc.Type
 		desc := doc.Desc
 		resCode := doc.Code
@@ -168,19 +171,19 @@ func reportPathOnBootstrapped(ec common.ExecContext, url string, doc PathDoc) {
 			Url:     "/goauth" + url,
 			ResCode: resCode,
 		}
-		return domain.CreatePathIfNotExist(ec, r)
+		return domain.CreatePathIfNotExist(ec, r, common.NilUser())
 	})
 }
 
 func scheduleTasks() {
 	// distributed tasks
-	var err error = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec common.ExecContext) error {
+	var err error = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec common.Rail) error {
 		return domain.LoadRoleResCache(ec)
 	})
 	if err != nil {
 		logrus.Fatalf("Schedule task failed, %v", err)
 	}
-	err = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec common.ExecContext) error {
+	err = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec common.Rail) error {
 		return domain.LoadPathResCache(ec)
 	})
 	if err != nil {
@@ -188,15 +191,15 @@ func scheduleTasks() {
 	}
 
 	// for the first time
-	server.PostServerBootstrapped(func(c common.ExecContext) error {
-		ec := common.EmptyExecContext()
+	server.PostServerBootstrapped(func(c common.Rail) error {
+		ec := common.EmptyRail()
 		if e := domain.LoadRoleResCache(ec); e != nil {
 			return fmt.Errorf("failed to load role resource, %v", e)
 		}
 		return nil
 	})
-	server.PostServerBootstrapped(func(c common.ExecContext) error {
-		ec := common.EmptyExecContext()
+	server.PostServerBootstrapped(func(c common.Rail) error {
+		ec := common.EmptyRail()
 		if e := domain.LoadPathResCache(ec); e != nil {
 			return fmt.Errorf("failed to load path resource, %v", e)
 		}

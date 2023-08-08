@@ -11,7 +11,7 @@ import (
 )
 
 func before(t *testing.T) {
-	common.LoadConfigFromFile("../app-conf-dev.yml", common.EmptyExecContext())
+	common.LoadConfigFromFile("../app-conf-dev.yml", common.EmptyRail())
 	if _, e := redis.InitRedisFromProp(); e != nil {
 		t.Fatal(e)
 	}
@@ -28,7 +28,7 @@ func TestUpdatePath(t *testing.T) {
 		Type:   PT_PUBLIC,
 		Group:  "goauth",
 	}
-	e := UpdatePath(common.EmptyExecContext(), req)
+	e := UpdatePath(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -40,7 +40,7 @@ func TestGetRoleInfo(t *testing.T) {
 	req := RoleInfoReq{
 		RoleNo: "role_554107924873216177918",
 	}
-	resp, e := GetRoleInfo(common.EmptyExecContext(), req)
+	resp, e := GetRoleInfo(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -55,7 +55,7 @@ func TestCreatePathIfNotExist(t *testing.T) {
 		Url:   "/goauth/open/api/role/resource/add",
 		Group: "goauth",
 	}
-	e := CreatePathIfNotExist(common.EmptyExecContext(), req)
+	e := CreatePathIfNotExist(common.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -68,7 +68,7 @@ func TestDeletePath(t *testing.T) {
 		PathNo: "path_555305367076864208429",
 	}
 
-	e := DeletePath(common.EmptyExecContext(), req)
+	e := DeletePath(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -81,7 +81,7 @@ func TestCreateRes(t *testing.T) {
 		Name: "GoAuth Test  ",
 	}
 
-	e := CreateResourceIfNotExist(common.EmptyExecContext(), req)
+	e := CreateResourceIfNotExist(common.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -95,7 +95,7 @@ func TestBindPathRes(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := BindPathRes(common.EmptyExecContext(), req)
+	e := BindPathRes(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -138,7 +138,7 @@ func TestUnbindPathRes(t *testing.T) {
 		PathNo: "path_555326806016000208429",
 	}
 
-	e := UnbindPathRes(common.EmptyExecContext(), req)
+	e := UnbindPathRes(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -151,7 +151,7 @@ func TestAddRole(t *testing.T) {
 		Name: "Guest",
 	}
 
-	e := AddRole(common.EmptyExecContext(), req)
+	e := AddRole(common.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -165,7 +165,7 @@ func TestAddResToRole(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := AddResToRoleIfNotExist(common.EmptyExecContext(), req)
+	e := AddResToRoleIfNotExist(common.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -188,7 +188,7 @@ func TestRemoveResFromRole(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := RemoveResFromRole(common.EmptyExecContext(), req)
+	e := RemoveResFromRole(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -206,7 +206,7 @@ func TestListRoleRes(t *testing.T) {
 		Paging: p,
 	}
 
-	resp, e := ListRoleRes(common.EmptyExecContext(), req)
+	resp, e := ListRoleRes(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -221,7 +221,7 @@ func TestListRoleRes(t *testing.T) {
 func TestListAllRoleBriefs(t *testing.T) {
 	before(t)
 
-	resp, e := ListAllRoleBriefs(common.EmptyExecContext())
+	resp, e := ListAllRoleBriefs(common.EmptyRail())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -239,7 +239,7 @@ func TestListRoles(t *testing.T) {
 		Paging: p,
 	}
 
-	resp, e := ListRoles(common.EmptyExecContext(), req)
+	resp, e := ListRoles(common.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -254,7 +254,7 @@ func TestListRoles(t *testing.T) {
 func TestTestResourceAccess(t *testing.T) {
 	before(t)
 
-	ec := common.EmptyExecContext()
+	ec := common.EmptyRail()
 	LoadPathResCache(ec)
 	LoadRoleResCache(ec)
 

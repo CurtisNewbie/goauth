@@ -285,7 +285,7 @@ var (
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
 
-func DeleteResource(ec common.ExecContext, req DeleteResourceReq) error {
+func DeleteResource(ec common.Rail, req DeleteResourceReq) error {
 
 	_, e := lockResourceGlobal(ec, func() (any, error) {
 		return nil, mysql.GetMySql().Transaction(func(tx *gorm.DB) error {
@@ -303,13 +303,13 @@ func DeleteResource(ec common.ExecContext, req DeleteResourceReq) error {
 		// asynchronously reload the cache of paths and resources
 		go func() {
 			if e := LoadPathResCache(ec); e != nil {
-				ec.Log.Errorf("Failed to load path resource cache, %v", e)
+				ec.Errorf("Failed to load path resource cache, %v", e)
 			}
 		}()
 		// asynchronously reload the cache of role and resources
 		go func() {
 			if e := LoadRoleResCache(ec); e != nil {
-				ec.Log.Errorf("Failed to load role resource cache, %v", e)
+				ec.Errorf("Failed to load role resource cache, %v", e)
 			}
 		}()
 	}
@@ -317,7 +317,7 @@ func DeleteResource(ec common.ExecContext, req DeleteResourceReq) error {
 	return e
 }
 
-func ListResourceCandidatesForRole(ec common.ExecContext, roleNo string) ([]ResBrief, error) {
+func ListResourceCandidatesForRole(ec common.Rail, roleNo string) ([]ResBrief, error) {
 	if roleNo == "" {
 		return []ResBrief{}, nil
 	}
@@ -336,7 +336,7 @@ func ListResourceCandidatesForRole(ec common.ExecContext, roleNo string) ([]ResB
 	return res, nil
 }
 
-func ListAllResBriefsOfRole(ec common.ExecContext, roleNo string) ([]ResBrief, error) {
+func ListAllResBriefsOfRole(ec common.Rail, roleNo string) ([]ResBrief, error) {
 	var res []ResBrief
 
 	if roleNo == DEFAULT_ADMIN_ROLE_NO {
@@ -357,7 +357,7 @@ func ListAllResBriefsOfRole(ec common.ExecContext, roleNo string) ([]ResBrief, e
 	return res, nil
 }
 
-func ListAllResBriefs(ec common.ExecContext) ([]ResBrief, error) {
+func ListAllResBriefs(ec common.Rail) ([]ResBrief, error) {
 	var res []ResBrief
 	tx := mysql.GetMySql().Raw("select name, code from resource").Scan(&res)
 	if tx.Error != nil {
@@ -369,7 +369,7 @@ func ListAllResBriefs(ec common.ExecContext) ([]ResBrief, error) {
 	return res, nil
 }
 
-func ListResources(ec common.ExecContext, req ListResReq) (ListResResp, error) {
+func ListResources(ec common.Rail, req ListResReq) (ListResResp, error) {
 	var resources []WRes
 	tx := mysql.GetMySql().
 		Raw("select * from resource order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
@@ -390,7 +390,7 @@ func ListResources(ec common.ExecContext, req ListResReq) (ListResResp, error) {
 	return ListResResp{Paging: common.RespPage(req.Paging, count), Payload: resources}, nil
 }
 
-func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
+func UpdatePath(ec common.Rail, req UpdatePathReq) error {
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		tx := mysql.GetMySql().Exec(`update path set pgroup = ?, ptype = ? where path_no = ?`,
 			req.Group, req.Type, req.PathNo)
@@ -403,30 +403,30 @@ func UpdatePath(ec common.ExecContext, req UpdatePathReq) error {
 	return e
 }
 
-func loadOnePathResCacheAsync(ec common.ExecContext, pathNo string) {
-	go func(ec common.ExecContext, pathNo string) {
-		// ec.Log.Infof("Refreshing path cache, pathNo: %s", pathNo)
+func loadOnePathResCacheAsync(ec common.Rail, pathNo string) {
+	go func(ec common.Rail, pathNo string) {
+		// ec.Infof("Refreshing path cache, pathNo: %s", pathNo)
 		ep, e := findPathRes(pathNo)
 		if e != nil {
-			ec.Log.Errorf("Failed to reload path cache, pathNo: %s, %v", pathNo, e)
+			ec.Errorf("Failed to reload path cache, pathNo: %s, %v", pathNo, e)
 			return
 		}
 
 		ep.Url = preprocessUrl(ep.Url)
 		cachedStr, e := prepCachedUrlResStr(ec, ep)
 		if e != nil {
-			ec.Log.Errorf("Failed to prepare cached url resource, pathNo: %s, %v", pathNo, e)
+			ec.Errorf("Failed to prepare cached url resource, pathNo: %s, %v", pathNo, e)
 			return
 		}
 
 		if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, cachedStr); e != nil {
-			ec.Log.Errorf("Failed to save cached url resource, pathNo: %s, %v", pathNo, e)
+			ec.Errorf("Failed to save cached url resource, pathNo: %s, %v", pathNo, e)
 			return
 		}
 	}(ec, pathNo)
 }
 
-func GetRoleInfo(ec common.ExecContext, req RoleInfoReq) (RoleInfoResp, error) {
+func GetRoleInfo(ec common.Rail, req RoleInfoReq) (RoleInfoResp, error) {
 	resp, _, err := roleInfoCache.GetElse(ec, req.RoleNo, func() (RoleInfoResp, bool, error) {
 		var resp RoleInfoResp
 		tx := mysql.GetMySql().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
@@ -442,7 +442,7 @@ func GetRoleInfo(ec common.ExecContext, req RoleInfoReq) (RoleInfoResp, error) {
 	return resp, err
 }
 
-func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
+func CreateResourceIfNotExist(ec common.Rail, req CreateResReq, user common.User) error {
 	req.Name = strings.TrimSpace(req.Name)
 	req.Code = strings.TrimSpace(req.Code)
 	_, e := lockResourceGlobal(ec, func() (any, error) {
@@ -453,15 +453,15 @@ func CreateResourceIfNotExist(ec common.ExecContext, req CreateResReq) error {
 		}
 
 		if id > 0 {
-			ec.Log.Debugf("Resource '%s' (%s) already exist", req.Code, req.Name)
+			ec.Debugf("Resource '%s' (%s) already exist", req.Code, req.Name)
 			return nil, nil
 		}
 
 		res := ERes{
 			Name:     req.Name,
 			Code:     req.Code,
-			CreateBy: ec.User.Username,
-			UpdateBy: ec.User.Username,
+			CreateBy: user.Username,
+			UpdateBy: user.Username,
 		}
 
 		tx = mysql.GetMySql().
@@ -478,7 +478,7 @@ func genPathNo(group string, url string, method string) string {
 	return "path_" + base64.StdEncoding.EncodeToString(cksum[:])
 }
 
-func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
+func CreatePathIfNotExist(ec common.Rail, req CreatePathReq, user common.User) error {
 	req.Url = preprocessUrl(req.Url)
 	req.Group = strings.TrimSpace(req.Group)
 	req.Method = strings.ToUpper(strings.TrimSpace(req.Method))
@@ -491,7 +491,7 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			return false, tx.Error
 		}
 		if id > 0 { // exists already
-			ec.Log.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
+			ec.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
 			return false, nil
 		}
 
@@ -502,8 +502,8 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			Pgroup:   req.Group,
 			Method:   req.Method,
 			PathNo:   pathNo,
-			CreateBy: ec.User.Username,
-			UpdateBy: ec.User.Username,
+			CreateBy: user.Username,
+			UpdateBy: user.Username,
 		}
 		tx = mysql.GetMySql().
 			Table("path").
@@ -513,7 +513,7 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 			return false, tx.Error
 		}
 
-		ec.Log.Infof("Created path (%s) '{%s}'", pathNo, req.Url)
+		ec.Infof("Created path (%s) '{%s}'", pathNo, req.Url)
 		return true, nil
 	})
 	if e != nil {
@@ -532,7 +532,7 @@ func CreatePathIfNotExist(ec common.ExecContext, req CreatePathReq) error {
 	return nil
 }
 
-func DeletePath(ec common.ExecContext, req DeletePathReq) error {
+func DeletePath(ec common.Rail, req DeletePathReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		er := mysql.GetMySql().Transaction(func(tx *gorm.DB) error {
@@ -549,7 +549,7 @@ func DeletePath(ec common.ExecContext, req DeletePathReq) error {
 	return e
 }
 
-func UnbindPathRes(ec common.ExecContext, req UnbindPathResReq) error {
+func UnbindPathRes(ec common.Rail, req UnbindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		tx := mysql.GetMySql().Exec(`delete from path_resource where path_no = ?`, req.PathNo)
@@ -560,14 +560,14 @@ func UnbindPathRes(ec common.ExecContext, req UnbindPathResReq) error {
 		// asynchronously reload the cache of paths and resources
 		go func() {
 			if e := LoadPathResCache(ec); e != nil {
-				ec.Log.Errorf("Failed to load path resource cache, %v", e)
+				ec.Errorf("Failed to load path resource cache, %v", e)
 			}
 		}()
 	}
 	return e
 }
 
-func RebindPathRes(ec common.ExecContext, req BindPathResReq) error {
+func RebindPathRes(ec common.Rail, req BindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		_, ex := lockResourceGlobal(ec, func() (any, error) {
@@ -616,7 +616,7 @@ func RebindPathRes(ec common.ExecContext, req BindPathResReq) error {
 	return e
 }
 
-func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
+func BindPathRes(ec common.Rail, req BindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) { // lock for path
 		_, ex := lockResourceGlobal(ec, func() (any, error) {
@@ -651,7 +651,7 @@ func BindPathRes(ec common.ExecContext, req BindPathResReq) error {
 	return e
 }
 
-func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
+func ListPaths(ec common.Rail, req ListPathReq) (ListPathResp, error) {
 	var paths []WPath
 	tx := mysql.GetMySql().
 		Table("path p").
@@ -708,13 +708,13 @@ func ListPaths(ec common.ExecContext, req ListPathReq) (ListPathResp, error) {
 	return ListPathResp{Payload: paths, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
 }
 
-func AddRole(ec common.ExecContext, req AddRoleReq) error {
+func AddRole(ec common.Rail, req AddRoleReq, user common.User) error {
 	_, e := redis.RLockRun(ec, "goauth:role:add"+req.Name, func() (any, error) {
 		r := ERole{
 			RoleNo:   common.GenIdP("role_"),
 			Name:     req.Name,
-			CreateBy: ec.User.Username,
-			UpdateBy: ec.User.Username,
+			CreateBy: user.Username,
+			UpdateBy: user.Username,
 		}
 		return nil, mysql.GetMySql().
 			Table("role").
@@ -724,7 +724,7 @@ func AddRole(ec common.ExecContext, req AddRoleReq) error {
 	return e
 }
 
-func RemoveResFromRole(ec common.ExecContext, req RemoveRoleResReq) error {
+func RemoveResFromRole(ec common.Rail, req RemoveRoleResReq) error {
 	_, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) {
 		tx := mysql.GetMySql().Exec(`delete from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode)
 		return nil, tx.Error
@@ -737,7 +737,7 @@ func RemoveResFromRole(ec common.ExecContext, req RemoveRoleResReq) error {
 	return e
 }
 
-func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
+func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User) error {
 
 	res, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) { // lock for role
 		return lockResourceGlobal(ec, func() (any, error) {
@@ -765,8 +765,8 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 			rr := ERoleRes{
 				RoleNo:   req.RoleNo,
 				ResCode:  req.ResCode,
-				CreateBy: ec.User.Username,
-				UpdateBy: ec.User.Username,
+				CreateBy: user.Username,
+				UpdateBy: user.Username,
 			}
 
 			return true, mysql.GetMySql().
@@ -787,7 +787,7 @@ func AddResToRoleIfNotExist(ec common.ExecContext, req AddRoleResReq) error {
 	return e
 }
 
-func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, error) {
+func ListRoleRes(ec common.Rail, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
 	tx := mysql.GetMySql().
 		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr
@@ -817,7 +817,7 @@ func ListRoleRes(ec common.ExecContext, req ListRoleResReq) (ListRoleResResp, er
 	return ListRoleResResp{Payload: res, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
 }
 
-func ListAllRoleBriefs(ec common.ExecContext) ([]RoleBrief, error) {
+func ListAllRoleBriefs(ec common.Rail) ([]RoleBrief, error) {
 	var roles []RoleBrief
 	tx := mysql.GetMySql().Raw("select role_no, name from role").Scan(&roles)
 	if tx.Error != nil {
@@ -829,7 +829,7 @@ func ListAllRoleBriefs(ec common.ExecContext) ([]RoleBrief, error) {
 	return roles, nil
 }
 
-func ListRoles(ec common.ExecContext, req ListRoleReq) (ListRoleResp, error) {
+func ListRoles(ec common.Rail, req ListRoleReq) (ListRoleResp, error) {
 	var roles []WRole
 	tx := mysql.GetMySql().
 		Raw("select * from role order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
@@ -851,7 +851,7 @@ func ListRoles(ec common.ExecContext, req ListRoleReq) (ListRoleResp, error) {
 }
 
 // Test access to resource
-func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAccessResp, error) {
+func TestResourceAccess(ec common.Rail, req TestResAccessReq) (TestResAccessResp, error) {
 	url := req.Url
 	roleNo := req.RoleNo
 
@@ -866,7 +866,7 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 	// find resource required for the url
 	cur, e := lookupUrlRes(ec, url, method)
 	if e != nil {
-		ec.Log.Infof("Rejected '%s' (%s), path not found", url, method)
+		ec.Infof("Rejected '%s' (%s), path not found", url, method)
 		return forbidden, nil
 	}
 
@@ -878,14 +878,14 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 	// doesn't even have role
 	roleNo = strings.TrimSpace(roleNo)
 	if roleNo == "" {
-		ec.Log.Infof("Rejected '%s', user doesn't have roleNo", url)
+		ec.Infof("Rejected '%s', user doesn't have roleNo", url)
 		return forbidden, nil
 	}
 
 	// the requiredRes resources no
 	requiredRes := cur.ResCode
 	if requiredRes == "" {
-		ec.Log.Infof("Rejected '%s', path doesn't have any resource bound yet", url)
+		ec.Infof("Rejected '%s', path doesn't have any resource bound yet", url)
 		return forbidden, nil
 	}
 
@@ -896,14 +896,14 @@ func TestResourceAccess(ec common.ExecContext, req TestResAccessReq) (TestResAcc
 
 	// the role doesn't have access to the required resource
 	if !ok {
-		ec.Log.Infof("Rejected '%s', roleNo: '%s', role doesn't have access to required resource '%s'", url, roleNo, requiredRes)
+		ec.Infof("Rejected '%s', roleNo: '%s', role doesn't have access to required resource '%s'", url, roleNo, requiredRes)
 		return forbidden, nil
 	}
 
 	return permitted, nil
 }
 
-func checkRoleRes(ec common.ExecContext, roleNo string, resCode string) (bool, error) {
+func checkRoleRes(ec common.Rail, roleNo string, resCode string) (bool, error) {
 	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resCode))
 	if e != nil {
 		return false, e
@@ -913,7 +913,7 @@ func checkRoleRes(ec common.ExecContext, roleNo string, resCode string) (bool, e
 }
 
 // Load cache for role -> resources
-func LoadRoleResCache(ec common.ExecContext) error {
+func LoadRoleResCache(ec common.Rail) error {
 
 	_, e := lockRoleResCache(ec, func() (any, error) {
 
@@ -933,7 +933,7 @@ func LoadRoleResCache(ec common.ExecContext) error {
 	return e
 }
 
-func _loadResOfRole(ec common.ExecContext, roleNo string) error {
+func _loadResOfRole(ec common.Rail, roleNo string) error {
 	roleResList, e := listRoleRes(ec, roleNo)
 	if e != nil {
 		return e
@@ -945,7 +945,7 @@ func _loadResOfRole(ec common.ExecContext, roleNo string) error {
 	return nil
 }
 
-func listRoleNos(ec common.ExecContext) ([]string, error) {
+func listRoleNos(ec common.Rail) ([]string, error) {
 	var ern []string
 	t := mysql.GetMySql().Raw("select role_no from role").Scan(&ern)
 	if t.Error != nil {
@@ -958,7 +958,7 @@ func listRoleNos(ec common.ExecContext) ([]string, error) {
 	return ern, nil
 }
 
-func listRoleRes(ec common.ExecContext, roleNo string) ([]ERoleRes, error) {
+func listRoleRes(ec common.Rail, roleNo string) ([]ERoleRes, error) {
 	var rr []ERoleRes
 	t := mysql.GetMySql().Raw("select * from role_resource where role_no = ?", roleNo).Scan(&rr)
 	if t.Error != nil {
@@ -971,7 +971,7 @@ func listRoleRes(ec common.ExecContext, roleNo string) ([]ERoleRes, error) {
 	return rr, nil
 }
 
-func lookupUrlRes(ec common.ExecContext, url string, method string) (CachedUrlRes, error) {
+func lookupUrlRes(ec common.Rail, url string, method string) (CachedUrlRes, error) {
 	js, e := urlResCache.Get(ec, method+":"+url)
 	if e != nil {
 		return CachedUrlRes{}, e
@@ -989,11 +989,11 @@ func lookupUrlRes(ec common.ExecContext, url string, method string) (CachedUrlRe
 }
 
 // Load cache for path -> resource
-func LoadPathResCache(ec common.ExecContext) error {
+func LoadPathResCache(ec common.Rail) error {
 
 	_, e := redis.RLockRun(ec, "goauth:path:res:cache", func() (any, error) {
 
-		// ec.Log.Info("Loading path resource cache")
+		// ec.Info("Loading path resource cache")
 
 		var paths []ExtendedPathRes
 		tx := mysql.GetMySql().
@@ -1015,7 +1015,7 @@ func LoadPathResCache(ec common.ExecContext) error {
 			if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, cachedStr); e != nil {
 				return nil, e
 			}
-			// ec.Log.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
+			// ec.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
 		}
 		return nil, nil
 	})
@@ -1023,7 +1023,7 @@ func LoadPathResCache(ec common.ExecContext) error {
 	return e
 }
 
-func prepCachedUrlResStr(ec common.ExecContext, epath ExtendedPathRes) (string, error) {
+func prepCachedUrlResStr(ec common.Rail, epath ExtendedPathRes) (string, error) {
 	url := epath.Url
 	cur := CachedUrlRes{
 		Id:      epath.Id,
@@ -1037,7 +1037,7 @@ func prepCachedUrlResStr(ec common.ExecContext, epath ExtendedPathRes) (string, 
 
 	j, e := json.Marshal(cur)
 	if e != nil {
-		ec.Log.Errorf("Failed to marshal EPath for '%s', %v", url, e)
+		ec.Errorf("Failed to marshal EPath for '%s', %v", url, e)
 		return "", e
 	}
 	return string(j), nil
@@ -1091,16 +1091,16 @@ func findPathRes(pathNo string) (ExtendedPathRes, error) {
 }
 
 // global lock for resources
-func lockResourceGlobal(ec common.ExecContext, runnable redis.LRunnable[any]) (any, error) {
+func lockResourceGlobal(ec common.Rail, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:resource:global", runnable)
 }
 
 // lock for path
-func lockPath(ec common.ExecContext, pathNo string, runnable redis.LRunnable[any]) (any, error) {
+func lockPath(ec common.Rail, pathNo string, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:path:"+pathNo, runnable)
 }
 
 // lock for role-resource cache
-func lockRoleResCache(ec common.ExecContext, runnable redis.LRunnable[any]) (any, error) {
+func lockRoleResCache(ec common.Rail, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:role:res:cache", runnable)
 }
