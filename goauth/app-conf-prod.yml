@@ -3,28 +3,28 @@ mode.production: false
 app.name: "goauth"
 
 mysql:
-  enabled: true 
+  enabled: true
   user: "${mysqlusername}"
-  password: "${mysqlpassword}" 
-  database: "goauth" 
-  host: "${mysqladdr}" 
+  password: "${mysqlpassword}"
+  database: "goauth"
+  host: "${mysqladdr}"
   port: 3306
 
 redis:
-  enabled: true 
-  address: "redis" 
+  enabled: true
+  address: "redis"
   port: 6379
-  username: 
+  username:
   password:
   database: 0
 
-server: 
+server:
   enabled: true
-  host: "0.0.0.0" 
+  host: "0.0.0.0"
   port: 8081
   gracefulShutdownTimeSec: 5
 
-consul: 
+consul:
   enabled: true
   registerName: goauth
   consulAddress: consul:8500
@@ -32,6 +32,14 @@ consul:
   healthCheckInterval: 5s
   healthCheckTimeout: 5s
   healthCheckFailedDeregisterAfter: 5s
+
+rabbitmq:
+  enabled: true
+  host: "rabbitmq"
+  port: 5672
+  username: "${rabbitmqusername}"
+  password: "${rabbitmqpassword}"
+  vhost: "/"
 
 tracing.propagation.keys:
   - id
