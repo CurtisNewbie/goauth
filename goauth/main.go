@@ -48,15 +48,15 @@ func registerWebEndpoints(ec common.Rail) {
 
 		-------------------------------
 	*/
-	urlpath := server.OpenApiPath("/resource/brief/user")
+	urlpath := "/open/api/resource/brief/user"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List resources of current user", Method: "GET"})
 	server.Get(urlpath, web.ListAllResBriefsOfRole)
 
-	urlpath = server.OpenApiPath("/resource/brief/all")
+	urlpath = "/open/api/resource/brief/all"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List all resource brief info", Method: "GET"})
 	server.Get(urlpath, web.ListAllResBriefs)
 
-	urlpath = server.OpenApiPath("/role/info")
+	urlpath = "/open/api/role/info"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "Get role info", Method: "POST"})
 	server.IPost(urlpath, web.GetRoleInfo)
 
@@ -67,70 +67,70 @@ func registerWebEndpoints(ec common.Rail) {
 
 		-------------------------------
 	*/
-	urlpath = server.OpenApiPath("/resource/add")
+	urlpath = "/open/api/resource/add"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.CreateResourceIfNotExist)
 
-	urlpath = server.OpenApiPath("/resource/remove")
+	urlpath = "/open/api/resource/remove"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.DeleteResource)
 
-	urlpath = server.OpenApiPath("/resource/brief/candidates")
+	urlpath = "/open/api/resource/brief/candidates"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: CODE_MNG_RESOURCES,
 		Method: "GET"})
 	server.Get(urlpath, web.ListResourceCandidatesForRole)
 
-	urlpath = server.OpenApiPath("/resource/list")
+	urlpath = "/open/api/resource/list"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.ListResources)
 
-	urlpath = server.OpenApiPath("/role/resource/add")
+	urlpath = "/open/api/role/resource/add"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
 	server.IPost(urlpath, web.AddResToRoleIfNotExist)
 
-	urlpath = server.OpenApiPath("/role/resource/remove")
+	urlpath = "/open/api/role/resource/remove"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
 	server.IPost(urlpath, web.RemoveResFromRole)
 
-	urlpath = server.OpenApiPath("/role/add")
+	urlpath = "/open/api/role/add"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.AddRole)
 
-	urlpath = server.OpenApiPath("/role/list")
+	urlpath = "/open/api/role/list"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.ListRoles)
 
-	urlpath = server.OpenApiPath("/role/brief/all")
+	urlpath = "/open/api/role/brief/all"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: CODE_MNG_RESOURCES,
 		Method: "GET"})
 	server.Get(urlpath, web.ListAllRoleBriefs)
 
-	urlpath = server.OpenApiPath("/role/resource/list")
+	urlpath = "/open/api/role/resource/list"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
 	server.IPost(urlpath, web.ListRoleRes)
 
-	urlpath = server.OpenApiPath("/path/list")
+	urlpath = "/open/api/path/list"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.ListPaths)
 
-	urlpath = server.OpenApiPath("/path/resource/bind")
+	urlpath = "/open/api/path/resource/bind"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
 	server.IPost(urlpath, web.BindPathRes)
 
-	urlpath = server.OpenApiPath("/path/resource/unbind")
+	urlpath = "/open/api/path/resource/unbind"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: CODE_MNG_RESOURCES,
 		Method: "POST"})
 	server.IPost(urlpath, web.UnbindPathRes)
 
-	urlpath = server.OpenApiPath("/path/delete")
+	urlpath = "/open/api/path/delete"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.DeletePath)
 
-	urlpath = server.OpenApiPath("/path/update")
+	urlpath = "/open/api/path/update"
 	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: CODE_MNG_RESOURCES, Method: "POST"})
 	server.IPost(urlpath, web.UpdatePath)
 
