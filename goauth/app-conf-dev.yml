@@ -1,4 +1,4 @@
-mode.production: true
+mode.production: false
 
 app.name: "goauth"
 

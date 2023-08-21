@@ -6,15 +6,19 @@ import (
 
 	"github.com/curtisnewbie/goauth/domain"
 	"github.com/curtisnewbie/goauth/web"
+	"github.com/curtisnewbie/gocommon/bus"
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/server"
 	"github.com/curtisnewbie/gocommon/task"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
-const CODE_MNG_RESOURCES = "manage-resources"
-const NAME_MNG_RESOURCES = "Manage Resources Access"
+const (
+	codeMngResources    = "manage-resources"
+	nameMngReesources   = "Manage Resources Access"
+	addPathEventBus     = "goauth.add-path"
+	addResourceEventBus = "goauth.add-resource"
+)
 
 type PathDoc struct {
 	Desc   string
@@ -24,20 +28,39 @@ type PathDoc struct {
 }
 
 func main() {
-	server.PreServerBootstrap(func(c common.Rail) error {
-		scheduleTasks()         // schedule cron jobs
-		registerWebEndpoints(c) // register http server endpoints
-		return nil
+	server.PreServerBootstrap(func(rail common.Rail) error {
+		if err := scheduleTasks(rail); err != nil { // schedule cron jobs
+			return err
+		}
+		registerWebEndpoints(rail)     // register http server endpoints
+		return SubscribeEventBus(rail) // subscribe to event bus
 	})
 
 	server.BootstrapServer(os.Args) // bootstrap server
 }
 
+func SubscribeEventBus(rail common.Rail) error {
+
+	// event bus to report path asynchronously
+	bus.SubscribeEventBus(addPathEventBus, 2, func(rail common.Rail, req domain.CreatePathReq) error {
+		rail.Debugf("receive %+v", req)
+		return domain.CreatePathIfNotExist(rail, req, common.NilUser())
+	})
+
+	// event bus to report resource asynchronously
+	bus.SubscribeEventBus(addResourceEventBus, 2, func(rail common.Rail, req domain.CreateResReq) error {
+		rail.Debugf("receive %+v", req)
+		return domain.CreateResourceIfNotExist(rail, req, common.NilUser())
+	})
+
+	return nil
+}
+
 func registerWebEndpoints(ec common.Rail) {
 	server.PostServerBootstrapped(func(c common.Rail) error {
 		return domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
-			Code: CODE_MNG_RESOURCES,
-			Name: NAME_MNG_RESOURCES,
+			Code: codeMngResources,
+			Name: nameMngReesources,
 		}, common.NilUser())
 	})
 
@@ -68,91 +91,90 @@ func registerWebEndpoints(ec common.Rail) {
 		-------------------------------
 	*/
 	urlpath = "/open/api/resource/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.CreateResourceIfNotExist)
 
 	urlpath = "/open/api/resource/remove"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.DeleteResource)
 
 	urlpath = "/open/api/resource/brief/candidates"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: CODE_MNG_RESOURCES,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: codeMngResources,
 		Method: "GET"})
 	server.Get(urlpath, web.ListResourceCandidatesForRole)
 
 	urlpath = "/open/api/resource/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.ListResources)
 
 	urlpath = "/open/api/role/resource/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: CODE_MNG_RESOURCES,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: codeMngResources,
 		Method: "POST"})
 	server.IPost(urlpath, web.AddResToRoleIfNotExist)
 
 	urlpath = "/open/api/role/resource/remove"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: CODE_MNG_RESOURCES,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: codeMngResources,
 		Method: "POST"})
 	server.IPost(urlpath, web.RemoveResFromRole)
 
 	urlpath = "/open/api/role/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.AddRole)
 
 	urlpath = "/open/api/role/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.ListRoles)
 
 	urlpath = "/open/api/role/brief/all"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: CODE_MNG_RESOURCES,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: codeMngResources,
 		Method: "GET"})
 	server.Get(urlpath, web.ListAllRoleBriefs)
 
 	urlpath = "/open/api/role/resource/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: CODE_MNG_RESOURCES,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: codeMngResources,
 		Method: "POST"})
 	server.IPost(urlpath, web.ListRoleRes)
 
 	urlpath = "/open/api/path/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.ListPaths)
 
 	urlpath = "/open/api/path/resource/bind"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: CODE_MNG_RESOURCES,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: codeMngResources,
 		Method: "POST"})
 	server.IPost(urlpath, web.BindPathRes)
 
 	urlpath = "/open/api/path/resource/unbind"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: CODE_MNG_RESOURCES,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: codeMngResources,
 		Method: "POST"})
 	server.IPost(urlpath, web.UnbindPathRes)
 
 	urlpath = "/open/api/path/delete"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.DeletePath)
 
 	urlpath = "/open/api/path/update"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: CODE_MNG_RESOURCES, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: codeMngResources, Method: "POST"})
 	server.IPost(urlpath, web.UpdatePath)
 
 	// internal endpoints
-	server.IPost(server.InternalApiPath("/resource/add"),
-		func(c *gin.Context, ec common.Rail, req domain.CreateResReq) (any, error) {
-
+	server.IPost("/remote/resource/add",
+		func(c *gin.Context, rail common.Rail, req domain.CreateResReq) (any, error) {
 			user := server.ExtractUser(c)
-			return nil, domain.CreateResourceIfNotExist(ec, req, user)
+			return nil, domain.CreateResourceIfNotExist(rail, req, user)
 		})
-	server.IPost(server.InternalApiPath("/path/resource/access-test"),
-		func(c *gin.Context, ec common.Rail, req domain.TestResAccessReq) (any, error) {
-			return domain.TestResourceAccess(ec, req)
+	server.IPost("/remote/path/resource/access-test",
+		func(c *gin.Context, rail common.Rail, req domain.TestResAccessReq) (any, error) {
+			return domain.TestResourceAccess(rail, req)
 		})
-	server.IPost(server.InternalApiPath("/path/add"),
-		func(c *gin.Context, ec common.Rail, req domain.CreatePathReq) (any, error) {
+	server.IPost("/remote/path/add",
+		func(c *gin.Context, rail common.Rail, req domain.CreatePathReq) (any, error) {
 			user := server.ExtractUser(c)
-			return nil, domain.CreatePathIfNotExist(ec, req, user)
+			return nil, domain.CreatePathIfNotExist(rail, req, user)
 		})
-	server.IPost(server.InternalApiPath("/role/info"),
-		func(c *gin.Context, ec common.Rail, req domain.RoleInfoReq) (any, error) {
-			return domain.GetRoleInfo(ec, req)
+	server.IPost("/remote/role/info",
+		func(c *gin.Context, rail common.Rail, req domain.RoleInfoReq) (any, error) {
+			return domain.GetRoleInfo(rail, req)
 		})
 }
 
@@ -175,19 +197,19 @@ func reportPathOnBootstrapped(ec common.Rail, url string, doc PathDoc) {
 	})
 }
 
-func scheduleTasks() {
+func scheduleTasks(rail common.Rail) error {
 	// distributed tasks
 	var err error = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec common.Rail) error {
 		return domain.LoadRoleResCache(ec)
 	})
 	if err != nil {
-		logrus.Fatalf("Schedule task failed, %v", err)
+		return err
 	}
 	err = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec common.Rail) error {
 		return domain.LoadPathResCache(ec)
 	})
 	if err != nil {
-		logrus.Fatalf("Schedule task failed, %v", err)
+		return err
 	}
 
 	// for the first time
@@ -205,4 +227,5 @@ func scheduleTasks() {
 		}
 		return nil
 	})
+	return nil
 }
