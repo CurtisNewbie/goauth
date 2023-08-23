@@ -288,7 +288,7 @@ var (
 func DeleteResource(ec common.Rail, req DeleteResourceReq) error {
 
 	_, e := lockResourceGlobal(ec, func() (any, error) {
-		return nil, mysql.GetMySql().Transaction(func(tx *gorm.DB) error {
+		return nil, mysql.GetConn().Transaction(func(tx *gorm.DB) error {
 			if t := tx.Exec(`delete from resource where code = ?`, req.ResCode); t != nil {
 				return t.Error
 			}
@@ -323,7 +323,7 @@ func ListResourceCandidatesForRole(ec common.Rail, roleNo string) ([]ResBrief, e
 	}
 
 	var res []ResBrief
-	tx := mysql.GetMySql().
+	tx := mysql.GetConn().
 		Raw(`select r.name, r.code from resource r
 			where not exists (select * from role_resource where role_no = ? and res_code = r.code)`, roleNo).
 		Scan(&res)
@@ -343,7 +343,7 @@ func ListAllResBriefsOfRole(ec common.Rail, roleNo string) ([]ResBrief, error) {
 		return ListAllResBriefs(ec)
 	}
 
-	tx := mysql.GetMySql().
+	tx := mysql.GetConn().
 		Raw(`select r.name, r.code from role_resource rr left join resource r
 			on r.code = rr.res_code
 			where rr.role_no = ?`, roleNo).
@@ -359,7 +359,7 @@ func ListAllResBriefsOfRole(ec common.Rail, roleNo string) ([]ResBrief, error) {
 
 func ListAllResBriefs(ec common.Rail) ([]ResBrief, error) {
 	var res []ResBrief
-	tx := mysql.GetMySql().Raw("select name, code from resource").Scan(&res)
+	tx := mysql.GetConn().Raw("select name, code from resource").Scan(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -371,7 +371,7 @@ func ListAllResBriefs(ec common.Rail) ([]ResBrief, error) {
 
 func ListResources(ec common.Rail, req ListResReq) (ListResResp, error) {
 	var resources []WRes
-	tx := mysql.GetMySql().
+	tx := mysql.GetConn().
 		Raw("select * from resource order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&resources)
 	if tx.Error != nil {
@@ -382,7 +382,7 @@ func ListResources(ec common.Rail, req ListResReq) (ListResResp, error) {
 	}
 
 	var count int
-	tx = mysql.GetMySql().Raw("select count(*) from resource").Scan(&count)
+	tx = mysql.GetConn().Raw("select count(*) from resource").Scan(&count)
 	if tx.Error != nil {
 		return ListResResp{}, tx.Error
 	}
@@ -392,7 +392,7 @@ func ListResources(ec common.Rail, req ListResReq) (ListResResp, error) {
 
 func UpdatePath(ec common.Rail, req UpdatePathReq) error {
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
-		tx := mysql.GetMySql().Exec(`update path set pgroup = ?, ptype = ? where path_no = ?`,
+		tx := mysql.GetConn().Exec(`update path set pgroup = ?, ptype = ? where path_no = ?`,
 			req.Group, req.Type, req.PathNo)
 		return nil, tx.Error
 	})
@@ -429,7 +429,7 @@ func loadOnePathResCacheAsync(ec common.Rail, pathNo string) {
 func GetRoleInfo(ec common.Rail, req RoleInfoReq) (RoleInfoResp, error) {
 	resp, _, err := roleInfoCache.GetElse(ec, req.RoleNo, func() (RoleInfoResp, bool, error) {
 		var resp RoleInfoResp
-		tx := mysql.GetMySql().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
+		tx := mysql.GetConn().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
 		if tx.Error != nil {
 			return resp, false, tx.Error
 		}
@@ -447,7 +447,7 @@ func CreateResourceIfNotExist(ec common.Rail, req CreateResReq, user common.User
 	req.Code = strings.TrimSpace(req.Code)
 	_, e := lockResourceGlobal(ec, func() (any, error) {
 		var id int
-		tx := mysql.GetMySql().Raw(`select id from resource where code = ? limit 1`, req.Code).Scan(&id)
+		tx := mysql.GetConn().Raw(`select id from resource where code = ? limit 1`, req.Code).Scan(&id)
 		if tx.Error != nil {
 			return nil, tx.Error
 		}
@@ -464,7 +464,7 @@ func CreateResourceIfNotExist(ec common.Rail, req CreateResReq, user common.User
 			UpdateBy: user.Username,
 		}
 
-		tx = mysql.GetMySql().
+		tx = mysql.GetConn().
 			Table("resource").
 			Omit("Id", "CreateTime", "UpdateTime").
 			Create(&res)
@@ -486,7 +486,7 @@ func CreatePathIfNotExist(ec common.Rail, req CreatePathReq, user common.User) e
 
 	res, e := lockPath(ec, pathNo, func() (any, error) {
 		var id int
-		tx := mysql.GetMySql().Raw(`select id from path where path_no = ? limit 1`, pathNo).Scan(&id)
+		tx := mysql.GetConn().Raw(`select id from path where path_no = ? limit 1`, pathNo).Scan(&id)
 		if tx.Error != nil {
 			return false, tx.Error
 		}
@@ -505,7 +505,7 @@ func CreatePathIfNotExist(ec common.Rail, req CreatePathReq, user common.User) e
 			CreateBy: user.Username,
 			UpdateBy: user.Username,
 		}
-		tx = mysql.GetMySql().
+		tx = mysql.GetConn().
 			Table("path").
 			Omit("Id", "CreateTime", "UpdateTime").
 			Create(&ep)
@@ -535,7 +535,7 @@ func CreatePathIfNotExist(ec common.Rail, req CreatePathReq, user common.User) e
 func DeletePath(ec common.Rail, req DeletePathReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
-		er := mysql.GetMySql().Transaction(func(tx *gorm.DB) error {
+		er := mysql.GetConn().Transaction(func(tx *gorm.DB) error {
 			tx = tx.Exec(`delete from path where path_no = ?`, req.PathNo)
 			if tx.Error != nil {
 				return tx.Error
@@ -552,7 +552,7 @@ func DeletePath(ec common.Rail, req DeletePathReq) error {
 func UnbindPathRes(ec common.Rail, req UnbindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
-		tx := mysql.GetMySql().Exec(`delete from path_resource where path_no = ?`, req.PathNo)
+		tx := mysql.GetConn().Exec(`delete from path_resource where path_no = ?`, req.PathNo)
 		return nil, tx.Error
 	})
 
@@ -574,7 +574,7 @@ func RebindPathRes(ec common.Rail, req BindPathResReq) error {
 
 			// check if resource exist
 			var resId int
-			tx := mysql.GetMySql().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
+			tx := mysql.GetConn().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
@@ -585,7 +585,7 @@ func RebindPathRes(ec common.Rail, req BindPathResReq) error {
 			// currently, a path can only be bound to a single resource
 			// check if the path is already bound to a resource
 			var pr PathRes
-			tx = mysql.GetMySql().Raw(`select * from path_resource where path_no = ?`, req.PathNo).Scan(&pr)
+			tx = mysql.GetConn().Raw(`select * from path_resource where path_no = ?`, req.PathNo).Scan(&pr)
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
@@ -596,7 +596,7 @@ func RebindPathRes(ec common.Rail, req BindPathResReq) error {
 					return nil, nil
 				} else {
 					// path is bound another resource, unbind it first
-					tx = mysql.GetMySql().Exec(`delete from path_resource where path_no = ?`, req.PathNo).Scan(&pr)
+					tx = mysql.GetConn().Exec(`delete from path_resource where path_no = ?`, req.PathNo).Scan(&pr)
 					if tx.Error != nil {
 						return nil, tx.Error
 					}
@@ -604,7 +604,7 @@ func RebindPathRes(ec common.Rail, req BindPathResReq) error {
 			}
 
 			// bind resource to path
-			return nil, mysql.GetMySql().Exec(`insert into path_resource (path_no, res_code) values (?, ?)`, req.PathNo, req.ResCode).Error
+			return nil, mysql.GetConn().Exec(`insert into path_resource (path_no, res_code) values (?, ?)`, req.PathNo, req.ResCode).Error
 		})
 		return nil, ex
 	})
@@ -623,7 +623,7 @@ func BindPathRes(ec common.Rail, req BindPathResReq) error {
 
 			// check if resource exist
 			var resId int
-			tx := mysql.GetMySql().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
+			tx := mysql.GetConn().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
 			if tx.Error != nil {
 				return nil, tx.Error
 			}
@@ -633,13 +633,13 @@ func BindPathRes(ec common.Rail, req BindPathResReq) error {
 
 			// check if the path is already bound to a resource
 			var prid int
-			tx = mysql.GetMySql().Raw(`select id from path_resource where path_no = ?`, req.PathNo).Scan(&prid)
+			tx = mysql.GetConn().Raw(`select id from path_resource where path_no = ?`, req.PathNo).Scan(&prid)
 			if tx.Error != nil || prid > 0 {
 				return nil, tx.Error
 			}
 
 			// bind resource to path
-			return nil, mysql.GetMySql().Exec(`insert into path_resource (path_no, res_code) values (?, ?)`, req.PathNo, req.ResCode).Error
+			return nil, mysql.GetConn().Exec(`insert into path_resource (path_no, res_code) values (?, ?)`, req.PathNo, req.ResCode).Error
 		})
 		return nil, ex
 	})
@@ -653,7 +653,7 @@ func BindPathRes(ec common.Rail, req BindPathResReq) error {
 
 func ListPaths(ec common.Rail, req ListPathReq) (ListPathResp, error) {
 	var paths []WPath
-	tx := mysql.GetMySql().
+	tx := mysql.GetConn().
 		Table("path p").
 		Select("p.*, pr.res_code ,r.name res_name").
 		Joins("left join path_resource pr on p.path_no = pr.path_no").
@@ -681,7 +681,7 @@ func ListPaths(ec common.Rail, req ListPathReq) (ListPathResp, error) {
 	}
 
 	var count int
-	tx = mysql.GetMySql().
+	tx = mysql.GetConn().
 		Table("path p").
 		Select("count(*)").
 		Joins("left join path_resource pr on p.path_no = pr.path_no").
@@ -716,7 +716,7 @@ func AddRole(ec common.Rail, req AddRoleReq, user common.User) error {
 			CreateBy: user.Username,
 			UpdateBy: user.Username,
 		}
-		return nil, mysql.GetMySql().
+		return nil, mysql.GetConn().
 			Table("role").
 			Omit("Id", "CreateTime", "UpdateTime").
 			Create(&r).Error
@@ -726,7 +726,7 @@ func AddRole(ec common.Rail, req AddRoleReq, user common.User) error {
 
 func RemoveResFromRole(ec common.Rail, req RemoveRoleResReq) error {
 	_, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) {
-		tx := mysql.GetMySql().Exec(`delete from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode)
+		tx := mysql.GetConn().Exec(`delete from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode)
 		return nil, tx.Error
 	})
 
@@ -743,7 +743,7 @@ func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User)
 		return lockResourceGlobal(ec, func() (any, error) {
 			// check if resource exist
 			var resId int
-			tx := mysql.GetMySql().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
+			tx := mysql.GetConn().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
 			if tx.Error != nil {
 				return false, tx.Error
 			}
@@ -753,7 +753,7 @@ func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User)
 
 			// check if role-resource relation exists
 			var id int
-			tx = mysql.GetMySql().Raw(`select id from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode).Scan(&id)
+			tx = mysql.GetConn().Raw(`select id from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode).Scan(&id)
 			if tx.Error != nil {
 				return false, tx.Error
 			}
@@ -769,7 +769,7 @@ func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User)
 				UpdateBy: user.Username,
 			}
 
-			return true, mysql.GetMySql().
+			return true, mysql.GetConn().
 				Table("role_resource").
 				Omit("Id", "CreateTime", "UpdateTime").
 				Create(&rr).Error
@@ -789,7 +789,7 @@ func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User)
 
 func ListRoleRes(ec common.Rail, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
-	tx := mysql.GetMySql().
+	tx := mysql.GetConn().
 		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr
 			left join resource r on rr.res_code = r.code
 			where rr.role_no = ? order by rr.id desc limit ?, ?`, req.RoleNo, req.Paging.GetOffset(), req.Paging.GetLimit()).
@@ -804,7 +804,7 @@ func ListRoleRes(ec common.Rail, req ListRoleResReq) (ListRoleResResp, error) {
 	}
 
 	var count int
-	tx = mysql.GetMySql().
+	tx = mysql.GetConn().
 		Raw(`select count(*) from role_resource rr
 			left join resource r on rr.res_code = r.code
 			where rr.role_no = ?`, req.RoleNo).
@@ -819,7 +819,7 @@ func ListRoleRes(ec common.Rail, req ListRoleResReq) (ListRoleResResp, error) {
 
 func ListAllRoleBriefs(ec common.Rail) ([]RoleBrief, error) {
 	var roles []RoleBrief
-	tx := mysql.GetMySql().Raw("select role_no, name from role").Scan(&roles)
+	tx := mysql.GetConn().Raw("select role_no, name from role").Scan(&roles)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -831,7 +831,7 @@ func ListAllRoleBriefs(ec common.Rail) ([]RoleBrief, error) {
 
 func ListRoles(ec common.Rail, req ListRoleReq) (ListRoleResp, error) {
 	var roles []WRole
-	tx := mysql.GetMySql().
+	tx := mysql.GetConn().
 		Raw("select * from role order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
 		Scan(&roles)
 	if tx.Error != nil {
@@ -842,7 +842,7 @@ func ListRoles(ec common.Rail, req ListRoleReq) (ListRoleResp, error) {
 	}
 
 	var count int
-	tx = mysql.GetMySql().Raw("select count(*) from role").Scan(&count)
+	tx = mysql.GetConn().Raw("select count(*) from role").Scan(&count)
 	if tx.Error != nil {
 		return ListRoleResp{}, tx.Error
 	}
@@ -947,7 +947,7 @@ func _loadResOfRole(ec common.Rail, roleNo string) error {
 
 func listRoleNos(ec common.Rail) ([]string, error) {
 	var ern []string
-	t := mysql.GetMySql().Raw("select role_no from role").Scan(&ern)
+	t := mysql.GetConn().Raw("select role_no from role").Scan(&ern)
 	if t.Error != nil {
 		return nil, t.Error
 	}
@@ -960,7 +960,7 @@ func listRoleNos(ec common.Rail) ([]string, error) {
 
 func listRoleRes(ec common.Rail, roleNo string) ([]ERoleRes, error) {
 	var rr []ERoleRes
-	t := mysql.GetMySql().Raw("select * from role_resource where role_no = ?", roleNo).Scan(&rr)
+	t := mysql.GetConn().Raw("select * from role_resource where role_no = ?", roleNo).Scan(&rr)
 	if t.Error != nil {
 		if errors.Is(t.Error, gorm.ErrRecordNotFound) {
 			return []ERoleRes{}, nil
@@ -996,7 +996,7 @@ func LoadPathResCache(ec common.Rail) error {
 		// ec.Info("Loading path resource cache")
 
 		var paths []ExtendedPathRes
-		tx := mysql.GetMySql().
+		tx := mysql.GetConn().
 			Raw("select p.*, pr.res_code from path p left join path_resource pr on p.path_no = pr.path_no").
 			Scan(&paths)
 		if tx.Error != nil {
@@ -1076,7 +1076,7 @@ func preprocessUrl(url string) string {
 
 func findPathRes(pathNo string) (ExtendedPathRes, error) {
 	var ep ExtendedPathRes
-	tx := mysql.GetMySql().
+	tx := mysql.GetConn().
 		Raw("select p.*, pr.res_code from path p left join path_resource pr on p.path_no = pr.path_no where p.path_no = ? limit 1", pathNo).
 		Scan(&ep)
 	if tx.Error != nil {
