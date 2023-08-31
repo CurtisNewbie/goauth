@@ -6,10 +6,11 @@ import (
 
 	"github.com/curtisnewbie/goauth/domain"
 	"github.com/curtisnewbie/goauth/web"
-	"github.com/curtisnewbie/gocommon/bus"
 	"github.com/curtisnewbie/gocommon/common"
-	"github.com/curtisnewbie/gocommon/server"
-	"github.com/curtisnewbie/gocommon/task"
+	"github.com/curtisnewbie/miso/bus"
+	"github.com/curtisnewbie/miso/core"
+	"github.com/curtisnewbie/miso/server"
+	"github.com/curtisnewbie/miso/task"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,7 +29,7 @@ type PathDoc struct {
 }
 
 func main() {
-	server.PreServerBootstrap(func(rail common.Rail) error {
+	server.PreServerBootstrap(func(rail core.Rail) error {
 		if err := scheduleTasks(rail); err != nil { // schedule cron jobs
 			return err
 		}
@@ -39,16 +40,16 @@ func main() {
 	server.BootstrapServer(os.Args) // bootstrap server
 }
 
-func SubscribeEventBus(rail common.Rail) error {
+func SubscribeEventBus(rail core.Rail) error {
 
 	// event bus to report path asynchronously
-	bus.SubscribeEventBus(addPathEventBus, 2, func(rail common.Rail, req domain.CreatePathReq) error {
+	bus.SubscribeEventBus(addPathEventBus, 2, func(rail core.Rail, req domain.CreatePathReq) error {
 		rail.Debugf("receive %+v", req)
 		return domain.CreatePathIfNotExist(rail, req, common.NilUser())
 	})
 
 	// event bus to report resource asynchronously
-	bus.SubscribeEventBus(addResourceEventBus, 2, func(rail common.Rail, req domain.CreateResReq) error {
+	bus.SubscribeEventBus(addResourceEventBus, 2, func(rail core.Rail, req domain.CreateResReq) error {
 		rail.Debugf("receive %+v", req)
 		return domain.CreateResourceIfNotExist(rail, req, common.NilUser())
 	})
@@ -56,8 +57,8 @@ func SubscribeEventBus(rail common.Rail) error {
 	return nil
 }
 
-func registerWebEndpoints(ec common.Rail) {
-	server.PostServerBootstrapped(func(c common.Rail) error {
+func registerWebEndpoints(ec core.Rail) {
+	server.PostServerBootstrapped(func(c core.Rail) error {
 		return domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
 			Code: codeMngResources,
 			Name: nameMngReesources,
@@ -159,27 +160,27 @@ func registerWebEndpoints(ec common.Rail) {
 
 	// internal endpoints
 	server.IPost("/remote/resource/add",
-		func(c *gin.Context, rail common.Rail, req domain.CreateResReq) (any, error) {
-			user := server.ExtractUser(c)
+		func(c *gin.Context, rail core.Rail, req domain.CreateResReq) (any, error) {
+			user := common.GetUser(rail)
 			return nil, domain.CreateResourceIfNotExist(rail, req, user)
 		})
 	server.IPost("/remote/path/resource/access-test",
-		func(c *gin.Context, rail common.Rail, req domain.TestResAccessReq) (any, error) {
+		func(c *gin.Context, rail core.Rail, req domain.TestResAccessReq) (any, error) {
 			return domain.TestResourceAccess(rail, req)
 		})
 	server.IPost("/remote/path/add",
-		func(c *gin.Context, rail common.Rail, req domain.CreatePathReq) (any, error) {
-			user := server.ExtractUser(c)
+		func(c *gin.Context, rail core.Rail, req domain.CreatePathReq) (any, error) {
+			user := common.GetUser(rail)
 			return nil, domain.CreatePathIfNotExist(rail, req, user)
 		})
 	server.IPost("/remote/role/info",
-		func(c *gin.Context, rail common.Rail, req domain.RoleInfoReq) (any, error) {
+		func(c *gin.Context, rail core.Rail, req domain.RoleInfoReq) (any, error) {
 			return domain.GetRoleInfo(rail, req)
 		})
 }
 
-func reportPathOnBootstrapped(ec common.Rail, url string, doc PathDoc) {
-	server.PostServerBootstrapped(func(c common.Rail) error {
+func reportPathOnBootstrapped(ec core.Rail, url string, doc PathDoc) {
+	server.PostServerBootstrapped(func(c core.Rail) error {
 		ptype := doc.Type
 		desc := doc.Desc
 		resCode := doc.Code
@@ -197,15 +198,15 @@ func reportPathOnBootstrapped(ec common.Rail, url string, doc PathDoc) {
 	})
 }
 
-func scheduleTasks(rail common.Rail) error {
+func scheduleTasks(rail core.Rail) error {
 	// distributed tasks
-	var err error = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec common.Rail) error {
+	var err error = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec core.Rail) error {
 		return domain.LoadRoleResCache(ec)
 	})
 	if err != nil {
 		return err
 	}
-	err = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec common.Rail) error {
+	err = task.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec core.Rail) error {
 		return domain.LoadPathResCache(ec)
 	})
 	if err != nil {
@@ -213,15 +214,15 @@ func scheduleTasks(rail common.Rail) error {
 	}
 
 	// for the first time
-	server.PostServerBootstrapped(func(c common.Rail) error {
-		ec := common.EmptyRail()
+	server.PostServerBootstrapped(func(c core.Rail) error {
+		ec := core.EmptyRail()
 		if e := domain.LoadRoleResCache(ec); e != nil {
 			return fmt.Errorf("failed to load role resource, %v", e)
 		}
 		return nil
 	})
-	server.PostServerBootstrapped(func(c common.Rail) error {
-		ec := common.EmptyRail()
+	server.PostServerBootstrapped(func(c core.Rail) error {
+		ec := core.EmptyRail()
 		if e := domain.LoadPathResCache(ec); e != nil {
 			return fmt.Errorf("failed to load path resource, %v", e)
 		}

@@ -10,8 +10,9 @@ import (
 	"time"
 
 	"github.com/curtisnewbie/gocommon/common"
-	"github.com/curtisnewbie/gocommon/mysql"
-	"github.com/curtisnewbie/gocommon/redis"
+	"github.com/curtisnewbie/miso/core"
+	"github.com/curtisnewbie/miso/mysql"
+	"github.com/curtisnewbie/miso/redis"
 	"gorm.io/gorm"
 )
 
@@ -36,9 +37,9 @@ type PathRes struct {
 	Id         int    // id
 	PathNo     string // path no
 	ResCode    string // resource code
-	CreateTime common.ETime
+	CreateTime core.ETime
 	CreateBy   string
-	UpdateTime common.ETime
+	UpdateTime core.ETime
 	UpdateBy   string
 }
 
@@ -51,9 +52,9 @@ type ExtendedPathRes struct {
 	Url        string   // url
 	Method     string   // http method
 	Ptype      PathType // path type: PROTECTED, PUBLIC
-	CreateTime common.ETime
+	CreateTime core.ETime
 	CreateBy   string
-	UpdateTime common.ETime
+	UpdateTime core.ETime
 	UpdateBy   string
 }
 
@@ -65,9 +66,9 @@ type EPath struct {
 	Url        string   // url
 	Method     string   // method
 	Ptype      PathType // path type: PROTECTED, PUBLIC
-	CreateTime common.ETime
+	CreateTime core.ETime
 	CreateBy   string
-	UpdateTime common.ETime
+	UpdateTime core.ETime
 	UpdateBy   string
 }
 
@@ -75,9 +76,9 @@ type ERes struct {
 	Id         int    // id
 	Code       string // resource code
 	Name       string // resource name
-	CreateTime common.ETime
+	CreateTime core.ETime
 	CreateBy   string
-	UpdateTime common.ETime
+	UpdateTime core.ETime
 	UpdateBy   string
 }
 
@@ -85,9 +86,9 @@ type ERoleRes struct {
 	Id         int    // id
 	RoleNo     string // role no
 	ResCode    string // resource code
-	CreateTime common.ETime
+	CreateTime core.ETime
 	CreateBy   string
-	UpdateTime common.ETime
+	UpdateTime core.ETime
 	UpdateBy   string
 }
 
@@ -95,9 +96,9 @@ type ERole struct {
 	Id         int
 	RoleNo     string
 	Name       string
-	CreateTime common.ETime
+	CreateTime core.ETime
 	CreateBy   string
-	UpdateTime common.ETime
+	UpdateTime core.ETime
 	UpdateBy   string
 }
 
@@ -105,9 +106,9 @@ type WRole struct {
 	Id         int          `json:"id"`
 	RoleNo     string       `json:"roleNo"`
 	Name       string       `json:"name"`
-	CreateTime common.ETime `json:"createTime"`
+	CreateTime core.ETime `json:"createTime"`
 	CreateBy   string       `json:"createBy"`
-	UpdateTime common.ETime `json:"updateTime"`
+	UpdateTime core.ETime `json:"updateTime"`
 	UpdateBy   string       `json:"updateBy"`
 }
 
@@ -141,12 +142,12 @@ type TestResAccessResp struct {
 }
 
 type ListRoleReq struct {
-	Paging common.Paging `json:"pagingVo"`
+	Paging core.Paging `json:"pagingVo"`
 }
 
 type ListRoleResp struct {
 	Payload []WRole       `json:"payload"`
-	Paging  common.Paging `json:"pagingVo"`
+	Paging  core.Paging `json:"pagingVo"`
 }
 
 type RoleBrief struct {
@@ -159,7 +160,7 @@ type ListPathReq struct {
 	Pgroup  string        `json:"pgroup"`
 	Url     string        `json:"url"`
 	Ptype   PathType      `json:"ptype"`
-	Paging  common.Paging `json:"pagingVo"`
+	Paging  core.Paging `json:"pagingVo"`
 }
 
 type WPath struct {
@@ -172,9 +173,9 @@ type WPath struct {
 	Desc       string       `json:"desc"`
 	Url        string       `json:"url"`
 	Ptype      PathType     `json:"ptype"`
-	CreateTime common.ETime `json:"createTime"`
+	CreateTime core.ETime `json:"createTime"`
 	CreateBy   string       `json:"createBy"`
-	UpdateTime common.ETime `json:"updateTime"`
+	UpdateTime core.ETime `json:"updateTime"`
 	UpdateBy   string       `json:"updateBy"`
 }
 
@@ -182,14 +183,14 @@ type WRes struct {
 	Id         int          `json:"id"`
 	Code       string       `json:"code"`
 	Name       string       `json:"name"`
-	CreateTime common.ETime `json:"createTime"`
+	CreateTime core.ETime `json:"createTime"`
 	CreateBy   string       `json:"createBy"`
-	UpdateTime common.ETime `json:"updateTime"`
+	UpdateTime core.ETime `json:"updateTime"`
 	UpdateBy   string       `json:"updateBy"`
 }
 
 type ListPathResp struct {
-	Paging  common.Paging `json:"pagingVo"`
+	Paging  core.Paging `json:"pagingVo"`
 	Payload []WPath       `json:"payload"`
 }
 
@@ -203,7 +204,7 @@ type UnbindPathResReq struct {
 }
 
 type ListRoleResReq struct {
-	Paging common.Paging `json:"pagingVo"`
+	Paging core.Paging `json:"pagingVo"`
 	RoleNo string        `json:"roleNo" validation:"notEmpty"`
 }
 
@@ -218,7 +219,7 @@ type AddRoleResReq struct {
 }
 
 type ListRoleResResp struct {
-	Paging  common.Paging   `json:"pagingVo"`
+	Paging  core.Paging   `json:"pagingVo"`
 	Payload []ListedRoleRes `json:"payload"`
 }
 
@@ -263,11 +264,11 @@ type DeletePathReq struct {
 }
 
 type ListResReq struct {
-	Paging common.Paging `json:"pagingVo"`
+	Paging core.Paging `json:"pagingVo"`
 }
 
 type ListResResp struct {
-	Paging  common.Paging `json:"pagingVo"`
+	Paging  core.Paging `json:"pagingVo"`
 	Payload []WRes        `json:"payload"`
 }
 
@@ -285,7 +286,7 @@ var (
 	roleResCache = redis.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
 )
 
-func DeleteResource(ec common.Rail, req DeleteResourceReq) error {
+func DeleteResource(ec core.Rail, req DeleteResourceReq) error {
 
 	_, e := lockResourceGlobal(ec, func() (any, error) {
 		return nil, mysql.GetConn().Transaction(func(tx *gorm.DB) error {
@@ -317,7 +318,7 @@ func DeleteResource(ec common.Rail, req DeleteResourceReq) error {
 	return e
 }
 
-func ListResourceCandidatesForRole(ec common.Rail, roleNo string) ([]ResBrief, error) {
+func ListResourceCandidatesForRole(ec core.Rail, roleNo string) ([]ResBrief, error) {
 	if roleNo == "" {
 		return []ResBrief{}, nil
 	}
@@ -336,7 +337,7 @@ func ListResourceCandidatesForRole(ec common.Rail, roleNo string) ([]ResBrief, e
 	return res, nil
 }
 
-func ListAllResBriefsOfRole(ec common.Rail, roleNo string) ([]ResBrief, error) {
+func ListAllResBriefsOfRole(ec core.Rail, roleNo string) ([]ResBrief, error) {
 	var res []ResBrief
 
 	if roleNo == DEFAULT_ADMIN_ROLE_NO {
@@ -357,7 +358,7 @@ func ListAllResBriefsOfRole(ec common.Rail, roleNo string) ([]ResBrief, error) {
 	return res, nil
 }
 
-func ListAllResBriefs(ec common.Rail) ([]ResBrief, error) {
+func ListAllResBriefs(ec core.Rail) ([]ResBrief, error) {
 	var res []ResBrief
 	tx := mysql.GetConn().Raw("select name, code from resource").Scan(&res)
 	if tx.Error != nil {
@@ -369,7 +370,7 @@ func ListAllResBriefs(ec common.Rail) ([]ResBrief, error) {
 	return res, nil
 }
 
-func ListResources(ec common.Rail, req ListResReq) (ListResResp, error) {
+func ListResources(ec core.Rail, req ListResReq) (ListResResp, error) {
 	var resources []WRes
 	tx := mysql.GetConn().
 		Raw("select * from resource order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
@@ -387,10 +388,10 @@ func ListResources(ec common.Rail, req ListResReq) (ListResResp, error) {
 		return ListResResp{}, tx.Error
 	}
 
-	return ListResResp{Paging: common.RespPage(req.Paging, count), Payload: resources}, nil
+	return ListResResp{Paging: core.RespPage(req.Paging, count), Payload: resources}, nil
 }
 
-func UpdatePath(ec common.Rail, req UpdatePathReq) error {
+func UpdatePath(ec core.Rail, req UpdatePathReq) error {
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		tx := mysql.GetConn().Exec(`update path set pgroup = ?, ptype = ? where path_no = ?`,
 			req.Group, req.Type, req.PathNo)
@@ -403,8 +404,8 @@ func UpdatePath(ec common.Rail, req UpdatePathReq) error {
 	return e
 }
 
-func loadOnePathResCacheAsync(ec common.Rail, pathNo string) {
-	go func(ec common.Rail, pathNo string) {
+func loadOnePathResCacheAsync(ec core.Rail, pathNo string) {
+	go func(ec core.Rail, pathNo string) {
 		// ec.Infof("Refreshing path cache, pathNo: %s", pathNo)
 		ep, e := findPathRes(pathNo)
 		if e != nil {
@@ -426,7 +427,7 @@ func loadOnePathResCacheAsync(ec common.Rail, pathNo string) {
 	}(ec, pathNo)
 }
 
-func GetRoleInfo(ec common.Rail, req RoleInfoReq) (RoleInfoResp, error) {
+func GetRoleInfo(ec core.Rail, req RoleInfoReq) (RoleInfoResp, error) {
 	resp, _, err := roleInfoCache.GetElse(ec, req.RoleNo, func() (RoleInfoResp, bool, error) {
 		var resp RoleInfoResp
 		tx := mysql.GetConn().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
@@ -435,14 +436,14 @@ func GetRoleInfo(ec common.Rail, req RoleInfoReq) (RoleInfoResp, error) {
 		}
 
 		if tx.RowsAffected < 1 {
-			return resp, false, common.NewWebErrCode(EC_ROLE_NOT_FOUND, "Role not found")
+			return resp, false, core.NewWebErrCode(EC_ROLE_NOT_FOUND, "Role not found")
 		}
 		return resp, true, nil
 	})
 	return resp, err
 }
 
-func CreateResourceIfNotExist(ec common.Rail, req CreateResReq, user common.User) error {
+func CreateResourceIfNotExist(ec core.Rail, req CreateResReq, user common.User) error {
 	req.Name = strings.TrimSpace(req.Name)
 	req.Code = strings.TrimSpace(req.Code)
 	_, e := lockResourceGlobal(ec, func() (any, error) {
@@ -478,7 +479,7 @@ func genPathNo(group string, url string, method string) string {
 	return "path_" + base64.StdEncoding.EncodeToString(cksum[:])
 }
 
-func CreatePathIfNotExist(ec common.Rail, req CreatePathReq, user common.User) error {
+func CreatePathIfNotExist(ec core.Rail, req CreatePathReq, user common.User) error {
 	req.Url = preprocessUrl(req.Url)
 	req.Group = strings.TrimSpace(req.Group)
 	req.Method = strings.ToUpper(strings.TrimSpace(req.Method))
@@ -532,7 +533,7 @@ func CreatePathIfNotExist(ec common.Rail, req CreatePathReq, user common.User) e
 	return nil
 }
 
-func DeletePath(ec common.Rail, req DeletePathReq) error {
+func DeletePath(ec core.Rail, req DeletePathReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		er := mysql.GetConn().Transaction(func(tx *gorm.DB) error {
@@ -549,7 +550,7 @@ func DeletePath(ec common.Rail, req DeletePathReq) error {
 	return e
 }
 
-func UnbindPathRes(ec common.Rail, req UnbindPathResReq) error {
+func UnbindPathRes(ec core.Rail, req UnbindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		tx := mysql.GetConn().Exec(`delete from path_resource where path_no = ?`, req.PathNo)
@@ -567,7 +568,7 @@ func UnbindPathRes(ec common.Rail, req UnbindPathResReq) error {
 	return e
 }
 
-func RebindPathRes(ec common.Rail, req BindPathResReq) error {
+func RebindPathRes(ec core.Rail, req BindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) {
 		_, ex := lockResourceGlobal(ec, func() (any, error) {
@@ -579,7 +580,7 @@ func RebindPathRes(ec common.Rail, req BindPathResReq) error {
 				return nil, tx.Error
 			}
 			if resId < 1 {
-				return nil, common.NewWebErr("Resource not found")
+				return nil, core.NewWebErr("Resource not found")
 			}
 
 			// currently, a path can only be bound to a single resource
@@ -616,7 +617,7 @@ func RebindPathRes(ec common.Rail, req BindPathResReq) error {
 	return e
 }
 
-func BindPathRes(ec common.Rail, req BindPathResReq) error {
+func BindPathRes(ec core.Rail, req BindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
 	_, e := lockPath(ec, req.PathNo, func() (any, error) { // lock for path
 		_, ex := lockResourceGlobal(ec, func() (any, error) {
@@ -628,7 +629,7 @@ func BindPathRes(ec common.Rail, req BindPathResReq) error {
 				return nil, tx.Error
 			}
 			if resId < 1 {
-				return nil, common.NewWebErr("Resource not found")
+				return nil, core.NewWebErr("Resource not found")
 			}
 
 			// check if the path is already bound to a resource
@@ -651,7 +652,7 @@ func BindPathRes(ec common.Rail, req BindPathResReq) error {
 	return e
 }
 
-func ListPaths(ec common.Rail, req ListPathReq) (ListPathResp, error) {
+func ListPaths(ec core.Rail, req ListPathReq) (ListPathResp, error) {
 	var paths []WPath
 	tx := mysql.GetConn().
 		Table("path p").
@@ -705,13 +706,13 @@ func ListPaths(ec common.Rail, req ListPathReq) (ListPathResp, error) {
 		return ListPathResp{}, tx.Error
 	}
 
-	return ListPathResp{Payload: paths, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
+	return ListPathResp{Payload: paths, Paging: core.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
 }
 
-func AddRole(ec common.Rail, req AddRoleReq, user common.User) error {
+func AddRole(ec core.Rail, req AddRoleReq, user common.User) error {
 	_, e := redis.RLockRun(ec, "goauth:role:add"+req.Name, func() (any, error) {
 		r := ERole{
-			RoleNo:   common.GenIdP("role_"),
+			RoleNo:   core.GenIdP("role_"),
 			Name:     req.Name,
 			CreateBy: user.Username,
 			UpdateBy: user.Username,
@@ -724,7 +725,7 @@ func AddRole(ec common.Rail, req AddRoleReq, user common.User) error {
 	return e
 }
 
-func RemoveResFromRole(ec common.Rail, req RemoveRoleResReq) error {
+func RemoveResFromRole(ec core.Rail, req RemoveRoleResReq) error {
 	_, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) {
 		tx := mysql.GetConn().Exec(`delete from role_resource where role_no = ? and res_code = ?`, req.RoleNo, req.ResCode)
 		return nil, tx.Error
@@ -737,7 +738,7 @@ func RemoveResFromRole(ec common.Rail, req RemoveRoleResReq) error {
 	return e
 }
 
-func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User) error {
+func AddResToRoleIfNotExist(ec core.Rail, req AddRoleResReq, user common.User) error {
 
 	res, e := redis.RLockRun(ec, "goauth:role:"+req.RoleNo, func() (any, error) { // lock for role
 		return lockResourceGlobal(ec, func() (any, error) {
@@ -748,7 +749,7 @@ func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User)
 				return false, tx.Error
 			}
 			if resId < 1 {
-				return false, common.NewWebErr("Resource not found")
+				return false, core.NewWebErr("Resource not found")
 			}
 
 			// check if role-resource relation exists
@@ -787,7 +788,7 @@ func AddResToRoleIfNotExist(ec common.Rail, req AddRoleResReq, user common.User)
 	return e
 }
 
-func ListRoleRes(ec common.Rail, req ListRoleResReq) (ListRoleResResp, error) {
+func ListRoleRes(ec core.Rail, req ListRoleResReq) (ListRoleResResp, error) {
 	var res []ListedRoleRes
 	tx := mysql.GetConn().
 		Raw(`select rr.id, rr.res_code, rr.create_time, rr.create_by, r.name 'res_name' from role_resource rr
@@ -814,10 +815,10 @@ func ListRoleRes(ec common.Rail, req ListRoleResReq) (ListRoleResResp, error) {
 		return ListRoleResResp{}, tx.Error
 	}
 
-	return ListRoleResResp{Payload: res, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
+	return ListRoleResResp{Payload: res, Paging: core.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
 }
 
-func ListAllRoleBriefs(ec common.Rail) ([]RoleBrief, error) {
+func ListAllRoleBriefs(ec core.Rail) ([]RoleBrief, error) {
 	var roles []RoleBrief
 	tx := mysql.GetConn().Raw("select role_no, name from role").Scan(&roles)
 	if tx.Error != nil {
@@ -829,7 +830,7 @@ func ListAllRoleBriefs(ec common.Rail) ([]RoleBrief, error) {
 	return roles, nil
 }
 
-func ListRoles(ec common.Rail, req ListRoleReq) (ListRoleResp, error) {
+func ListRoles(ec core.Rail, req ListRoleReq) (ListRoleResp, error) {
 	var roles []WRole
 	tx := mysql.GetConn().
 		Raw("select * from role order by id desc limit ?, ?", req.Paging.GetOffset(), req.Paging.GetLimit()).
@@ -847,11 +848,11 @@ func ListRoles(ec common.Rail, req ListRoleReq) (ListRoleResp, error) {
 		return ListRoleResp{}, tx.Error
 	}
 
-	return ListRoleResp{Payload: roles, Paging: common.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
+	return ListRoleResp{Payload: roles, Paging: core.Paging{Limit: req.Paging.Limit, Page: req.Paging.Page, Total: count}}, nil
 }
 
 // Test access to resource
-func TestResourceAccess(ec common.Rail, req TestResAccessReq) (TestResAccessResp, error) {
+func TestResourceAccess(ec core.Rail, req TestResAccessReq) (TestResAccessResp, error) {
 	url := req.Url
 	roleNo := req.RoleNo
 
@@ -903,7 +904,7 @@ func TestResourceAccess(ec common.Rail, req TestResAccessReq) (TestResAccessResp
 	return permitted, nil
 }
 
-func checkRoleRes(ec common.Rail, roleNo string, resCode string) (bool, error) {
+func checkRoleRes(ec core.Rail, roleNo string, resCode string) (bool, error) {
 	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resCode))
 	if e != nil {
 		return false, e
@@ -913,7 +914,7 @@ func checkRoleRes(ec common.Rail, roleNo string, resCode string) (bool, error) {
 }
 
 // Load cache for role -> resources
-func LoadRoleResCache(ec common.Rail) error {
+func LoadRoleResCache(ec core.Rail) error {
 
 	_, e := lockRoleResCache(ec, func() (any, error) {
 
@@ -933,7 +934,7 @@ func LoadRoleResCache(ec common.Rail) error {
 	return e
 }
 
-func _loadResOfRole(ec common.Rail, roleNo string) error {
+func _loadResOfRole(ec core.Rail, roleNo string) error {
 	roleResList, e := listRoleRes(ec, roleNo)
 	if e != nil {
 		return e
@@ -945,7 +946,7 @@ func _loadResOfRole(ec common.Rail, roleNo string) error {
 	return nil
 }
 
-func listRoleNos(ec common.Rail) ([]string, error) {
+func listRoleNos(ec core.Rail) ([]string, error) {
 	var ern []string
 	t := mysql.GetConn().Raw("select role_no from role").Scan(&ern)
 	if t.Error != nil {
@@ -958,7 +959,7 @@ func listRoleNos(ec common.Rail) ([]string, error) {
 	return ern, nil
 }
 
-func listRoleRes(ec common.Rail, roleNo string) ([]ERoleRes, error) {
+func listRoleRes(ec core.Rail, roleNo string) ([]ERoleRes, error) {
 	var rr []ERoleRes
 	t := mysql.GetConn().Raw("select * from role_resource where role_no = ?", roleNo).Scan(&rr)
 	if t.Error != nil {
@@ -971,13 +972,13 @@ func listRoleRes(ec common.Rail, roleNo string) ([]ERoleRes, error) {
 	return rr, nil
 }
 
-func lookupUrlRes(ec common.Rail, url string, method string) (CachedUrlRes, error) {
+func lookupUrlRes(ec core.Rail, url string, method string) (CachedUrlRes, error) {
 	js, e := urlResCache.Get(ec, method+":"+url)
 	if e != nil {
 		return CachedUrlRes{}, e
 	}
 	if js == "" {
-		return CachedUrlRes{}, common.NewWebErr(fmt.Sprintf("Unable to find path '%s'", url))
+		return CachedUrlRes{}, core.NewWebErr(fmt.Sprintf("Unable to find path '%s'", url))
 	}
 
 	var cur CachedUrlRes
@@ -989,7 +990,7 @@ func lookupUrlRes(ec common.Rail, url string, method string) (CachedUrlRes, erro
 }
 
 // Load cache for path -> resource
-func LoadPathResCache(ec common.Rail) error {
+func LoadPathResCache(ec core.Rail) error {
 
 	_, e := redis.RLockRun(ec, "goauth:path:res:cache", func() (any, error) {
 
@@ -1023,7 +1024,7 @@ func LoadPathResCache(ec common.Rail) error {
 	return e
 }
 
-func prepCachedUrlResStr(ec common.Rail, epath ExtendedPathRes) (string, error) {
+func prepCachedUrlResStr(ec core.Rail, epath ExtendedPathRes) (string, error) {
 	url := epath.Url
 	cur := CachedUrlRes{
 		Id:      epath.Id,
@@ -1084,23 +1085,23 @@ func findPathRes(pathNo string) (ExtendedPathRes, error) {
 	}
 
 	if tx.RowsAffected < 1 {
-		return ep, common.NewWebErr("Path not found")
+		return ep, core.NewWebErr("Path not found")
 	}
 
 	return ep, nil
 }
 
 // global lock for resources
-func lockResourceGlobal(ec common.Rail, runnable redis.LRunnable[any]) (any, error) {
+func lockResourceGlobal(ec core.Rail, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:resource:global", runnable)
 }
 
 // lock for path
-func lockPath(ec common.Rail, pathNo string, runnable redis.LRunnable[any]) (any, error) {
+func lockPath(ec core.Rail, pathNo string, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:path:"+pathNo, runnable)
 }
 
 // lock for role-resource cache
-func lockRoleResCache(ec common.Rail, runnable redis.LRunnable[any]) (any, error) {
+func lockRoleResCache(ec core.Rail, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:role:res:cache", runnable)
 }

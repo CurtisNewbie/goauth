@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/curtisnewbie/gocommon/common"
-	"github.com/curtisnewbie/gocommon/mysql"
-	"github.com/curtisnewbie/gocommon/redis"
-	"github.com/curtisnewbie/gocommon/server"
+	"github.com/curtisnewbie/miso/core"
+	"github.com/curtisnewbie/miso/mysql"
+	"github.com/curtisnewbie/miso/redis"
+	"github.com/curtisnewbie/miso/server"
 )
 
 func before(t *testing.T) {
-	common.LoadConfigFromFile("../app-conf-dev.yml", common.EmptyRail())
+	core.LoadConfigFromFile("../app-conf-dev.yml", core.EmptyRail())
 	if _, e := redis.InitRedisFromProp(); e != nil {
 		t.Fatal(e)
 	}
@@ -28,7 +29,7 @@ func TestUpdatePath(t *testing.T) {
 		Type:   PT_PUBLIC,
 		Group:  "goauth",
 	}
-	e := UpdatePath(common.EmptyRail(), req)
+	e := UpdatePath(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -40,7 +41,7 @@ func TestGetRoleInfo(t *testing.T) {
 	req := RoleInfoReq{
 		RoleNo: "role_554107924873216177918",
 	}
-	resp, e := GetRoleInfo(common.EmptyRail(), req)
+	resp, e := GetRoleInfo(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -55,7 +56,7 @@ func TestCreatePathIfNotExist(t *testing.T) {
 		Url:   "/goauth/open/api/role/resource/add",
 		Group: "goauth",
 	}
-	e := CreatePathIfNotExist(common.EmptyRail(), req, common.NilUser())
+	e := CreatePathIfNotExist(core.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -68,7 +69,7 @@ func TestDeletePath(t *testing.T) {
 		PathNo: "path_555305367076864208429",
 	}
 
-	e := DeletePath(common.EmptyRail(), req)
+	e := DeletePath(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -81,7 +82,7 @@ func TestCreateRes(t *testing.T) {
 		Name: "GoAuth Test  ",
 	}
 
-	e := CreateResourceIfNotExist(common.EmptyRail(), req, common.NilUser())
+	e := CreateResourceIfNotExist(core.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -95,7 +96,7 @@ func TestBindPathRes(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := BindPathRes(common.EmptyRail(), req)
+	e := BindPathRes(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -138,7 +139,7 @@ func TestUnbindPathRes(t *testing.T) {
 		PathNo: "path_555326806016000208429",
 	}
 
-	e := UnbindPathRes(common.EmptyRail(), req)
+	e := UnbindPathRes(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -151,7 +152,7 @@ func TestAddRole(t *testing.T) {
 		Name: "Guest",
 	}
 
-	e := AddRole(common.EmptyRail(), req, common.NilUser())
+	e := AddRole(core.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -165,14 +166,14 @@ func TestAddResToRole(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := AddResToRoleIfNotExist(common.EmptyRail(), req, common.NilUser())
+	e := AddResToRoleIfNotExist(core.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
 }
 
 func TestGenPathNo(t *testing.T) {
-	pathNo := genPathNo("test", "/common/path/is/that/okay/if/i/amy/very", "GET")
+	pathNo := genPathNo("test", "/core/path/is/that/okay/if/i/amy/very", "GET")
 	if pathNo == "" {
 		t.Error("pathNo is empty")
 		return
@@ -188,7 +189,7 @@ func TestRemoveResFromRole(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := RemoveResFromRole(common.EmptyRail(), req)
+	e := RemoveResFromRole(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -197,7 +198,7 @@ func TestRemoveResFromRole(t *testing.T) {
 func TestListRoleRes(t *testing.T) {
 	before(t)
 
-	p := common.Paging{
+	p := core.Paging{
 		Limit: 5,
 		Page:  1,
 	}
@@ -206,7 +207,7 @@ func TestListRoleRes(t *testing.T) {
 		Paging: p,
 	}
 
-	resp, e := ListRoleRes(common.EmptyRail(), req)
+	resp, e := ListRoleRes(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -221,7 +222,7 @@ func TestListRoleRes(t *testing.T) {
 func TestListAllRoleBriefs(t *testing.T) {
 	before(t)
 
-	resp, e := ListAllRoleBriefs(common.EmptyRail())
+	resp, e := ListAllRoleBriefs(core.EmptyRail())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -231,7 +232,7 @@ func TestListAllRoleBriefs(t *testing.T) {
 func TestListRoles(t *testing.T) {
 	before(t)
 
-	p := common.Paging{
+	p := core.Paging{
 		Limit: 5,
 		Page:  1,
 	}
@@ -239,7 +240,7 @@ func TestListRoles(t *testing.T) {
 		Paging: p,
 	}
 
-	resp, e := ListRoles(common.EmptyRail(), req)
+	resp, e := ListRoles(core.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -254,7 +255,7 @@ func TestListRoles(t *testing.T) {
 func TestTestResourceAccess(t *testing.T) {
 	before(t)
 
-	ec := common.EmptyRail()
+	ec := core.EmptyRail()
 	LoadPathResCache(ec)
 	LoadRoleResCache(ec)
 
@@ -372,10 +373,10 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 	for i, p := range paths {
 		p.url = preprocessUrl(p.url)
 		if p.pathNo == "" {
-			p.pathNo = common.GenIdP("path_")
+			p.pathNo = core.GenIdP("path_")
 		}
 		if p.resNo == "" {
-			p.resNo = common.GenIdP("res_")
+			p.resNo = core.GenIdP("res_")
 		}
 		paths[i] = p
 	}
