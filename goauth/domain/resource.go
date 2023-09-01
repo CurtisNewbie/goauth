@@ -103,13 +103,13 @@ type ERole struct {
 }
 
 type WRole struct {
-	Id         int          `json:"id"`
-	RoleNo     string       `json:"roleNo"`
-	Name       string       `json:"name"`
+	Id         int        `json:"id"`
+	RoleNo     string     `json:"roleNo"`
+	Name       string     `json:"name"`
 	CreateTime core.ETime `json:"createTime"`
-	CreateBy   string       `json:"createBy"`
+	CreateBy   string     `json:"createBy"`
 	UpdateTime core.ETime `json:"updateTime"`
-	UpdateBy   string       `json:"updateBy"`
+	UpdateBy   string     `json:"updateBy"`
 }
 
 type CachedUrlRes struct {
@@ -146,7 +146,7 @@ type ListRoleReq struct {
 }
 
 type ListRoleResp struct {
-	Payload []WRole       `json:"payload"`
+	Payload []WRole     `json:"payload"`
 	Paging  core.Paging `json:"pagingVo"`
 }
 
@@ -156,42 +156,40 @@ type RoleBrief struct {
 }
 
 type ListPathReq struct {
-	ResCode string        `json:"resCode"`
-	Pgroup  string        `json:"pgroup"`
-	Url     string        `json:"url"`
-	Ptype   PathType      `json:"ptype"`
+	ResCode string      `json:"resCode"`
+	Pgroup  string      `json:"pgroup"`
+	Url     string      `json:"url"`
+	Ptype   PathType    `json:"ptype"`
 	Paging  core.Paging `json:"pagingVo"`
 }
 
 type WPath struct {
-	Id         int          `json:"id"`
-	ResName    string       `json:"resName"`
-	Pgroup     string       `json:"pgroup"`
-	PathNo     string       `json:"pathNo"`
-	Method     string       `json:"method"`
-	ResCode    string       `json:"resCode"`
-	Desc       string       `json:"desc"`
-	Url        string       `json:"url"`
-	Ptype      PathType     `json:"ptype"`
+	Id         int        `json:"id"`
+	Pgroup     string     `json:"pgroup"`
+	PathNo     string     `json:"pathNo"`
+	Method     string     `json:"method"`
+	Desc       string     `json:"desc"`
+	Url        string     `json:"url"`
+	Ptype      PathType   `json:"ptype"`
 	CreateTime core.ETime `json:"createTime"`
-	CreateBy   string       `json:"createBy"`
+	CreateBy   string     `json:"createBy"`
 	UpdateTime core.ETime `json:"updateTime"`
-	UpdateBy   string       `json:"updateBy"`
+	UpdateBy   string     `json:"updateBy"`
 }
 
 type WRes struct {
-	Id         int          `json:"id"`
-	Code       string       `json:"code"`
-	Name       string       `json:"name"`
+	Id         int        `json:"id"`
+	Code       string     `json:"code"`
+	Name       string     `json:"name"`
 	CreateTime core.ETime `json:"createTime"`
-	CreateBy   string       `json:"createBy"`
+	CreateBy   string     `json:"createBy"`
 	UpdateTime core.ETime `json:"updateTime"`
-	UpdateBy   string       `json:"updateBy"`
+	UpdateBy   string     `json:"updateBy"`
 }
 
 type ListPathResp struct {
 	Paging  core.Paging `json:"pagingVo"`
-	Payload []WPath       `json:"payload"`
+	Payload []WPath     `json:"payload"`
 }
 
 type BindPathResReq struct {
@@ -200,12 +198,13 @@ type BindPathResReq struct {
 }
 
 type UnbindPathResReq struct {
-	PathNo string `json:"pathNo" validation:"notEmpty"`
+	PathNo  string `json:"pathNo" validation:"notEmpty"`
+	ResCode string `json:"resCode" validation:"notEmpty"`
 }
 
 type ListRoleResReq struct {
 	Paging core.Paging `json:"pagingVo"`
-	RoleNo string        `json:"roleNo" validation:"notEmpty"`
+	RoleNo string      `json:"roleNo" validation:"notEmpty"`
 }
 
 type RemoveRoleResReq struct {
@@ -219,7 +218,7 @@ type AddRoleResReq struct {
 }
 
 type ListRoleResResp struct {
-	Paging  core.Paging   `json:"pagingVo"`
+	Paging  core.Paging     `json:"pagingVo"`
 	Payload []ListedRoleRes `json:"payload"`
 }
 
@@ -269,7 +268,7 @@ type ListResReq struct {
 
 type ListResResp struct {
 	Paging  core.Paging `json:"pagingVo"`
-	Payload []WRes        `json:"payload"`
+	Payload []WRes      `json:"payload"`
 }
 
 type CreateResReq struct {
@@ -325,8 +324,9 @@ func ListResourceCandidatesForRole(ec core.Rail, roleNo string) ([]ResBrief, err
 
 	var res []ResBrief
 	tx := mysql.GetConn().
-		Raw(`select r.name, r.code from resource r
-			where not exists (select * from role_resource where role_no = ? and res_code = r.code)`, roleNo).
+		Select("r.name, r.code").
+		Table("resource r").
+		Where("NOT EXISTS (SELECT * FROM role_resource WHERE role_no = ? and res_code = r.code)", roleNo).
 		Scan(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -345,9 +345,10 @@ func ListAllResBriefsOfRole(ec core.Rail, roleNo string) ([]ResBrief, error) {
 	}
 
 	tx := mysql.GetConn().
-		Raw(`select r.name, r.code from role_resource rr left join resource r
-			on r.code = rr.res_code
-			where rr.role_no = ?`, roleNo).
+		Select(`r.name, r.code`).
+		Table(`role_resource rr`).
+		Joins(`LEFT JOIN resource r ON r.code = rr.res_code`).
+		Where(`rr.role_no = ?`, roleNo).
 		Scan(&res)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -527,7 +528,7 @@ func CreatePathIfNotExist(ec core.Rail, req CreatePathReq, user common.User) err
 	}
 
 	if req.ResCode != "" { // rebind path and resource
-		return RebindPathRes(ec, BindPathResReq{PathNo: pathNo, ResCode: req.ResCode})
+		return BindPathRes(ec, BindPathResReq{PathNo: pathNo, ResCode: req.ResCode})
 	}
 
 	return nil
@@ -568,113 +569,80 @@ func UnbindPathRes(ec core.Rail, req UnbindPathResReq) error {
 	return e
 }
 
-func RebindPathRes(ec core.Rail, req BindPathResReq) error {
+func BindPathRes(rail core.Rail, req BindPathResReq) error {
 	req.PathNo = strings.TrimSpace(req.PathNo)
-	_, e := lockPath(ec, req.PathNo, func() (any, error) {
-		_, ex := lockResourceGlobal(ec, func() (any, error) {
+	e := lockPathExec(rail, req.PathNo, func() error { // lock for path
+		return lockResourceGlobalExec(rail, func() error {
 
 			// check if resource exist
 			var resId int
-			tx := mysql.GetConn().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
+			tx := mysql.GetConn().
+				Raw(`SELECT id FROM resource WHERE code = ?`, req.ResCode).
+				Scan(&resId)
 			if tx.Error != nil {
-				return nil, tx.Error
+				return tx.Error
 			}
 			if resId < 1 {
-				return nil, core.NewWebErr("Resource not found")
+				rail.Errorf("Resource %v not found", req.ResCode)
+				return core.NewWebErr("Resource not found")
 			}
 
-			// currently, a path can only be bound to a single resource
-			// check if the path is already bound to a resource
-			var pr PathRes
-			tx = mysql.GetConn().Raw(`select * from path_resource where path_no = ?`, req.PathNo).Scan(&pr)
-			if tx.Error != nil {
-				return nil, tx.Error
-			}
-
-			// a relation exists, check if the resource is the one we want
-			if pr.Id > 0 {
-				if pr.ResCode == req.ResCode { // already bound as we hope
-					return nil, nil
-				} else {
-					// path is bound another resource, unbind it first
-					tx = mysql.GetConn().Exec(`delete from path_resource where path_no = ?`, req.PathNo).Scan(&pr)
-					if tx.Error != nil {
-						return nil, tx.Error
-					}
-				}
-			}
-
-			// bind resource to path
-			return nil, mysql.GetConn().Exec(`insert into path_resource (path_no, res_code) values (?, ?)`, req.PathNo, req.ResCode).Error
-		})
-		return nil, ex
-	})
-
-	if e == nil {
-		// asynchronously reload the cache of paths and resources
-		loadOnePathResCacheAsync(ec, req.PathNo)
-	}
-	return e
-}
-
-func BindPathRes(ec core.Rail, req BindPathResReq) error {
-	req.PathNo = strings.TrimSpace(req.PathNo)
-	_, e := lockPath(ec, req.PathNo, func() (any, error) { // lock for path
-		_, ex := lockResourceGlobal(ec, func() (any, error) {
-
-			// check if resource exist
-			var resId int
-			tx := mysql.GetConn().Raw(`select id from resource where code = ?`, req.ResCode).Scan(&resId)
-			if tx.Error != nil {
-				return nil, tx.Error
-			}
-			if resId < 1 {
-				return nil, core.NewWebErr("Resource not found")
-			}
-
-			// check if the path is already bound to a resource
+			// check if the path is already bound to current resource
 			var prid int
-			tx = mysql.GetConn().Raw(`select id from path_resource where path_no = ?`, req.PathNo).Scan(&prid)
-			if tx.Error != nil || prid > 0 {
-				return nil, tx.Error
+			tx = mysql.GetConn().
+				Raw(`SELECT id FROM path_resource WHERE path_no = ? AND res_code = ? LIMIT 1`, req.PathNo, req.ResCode).
+				Scan(&prid)
+
+			if tx.Error != nil {
+				rail.Errorf("Failed to bind path %v to resource %v, %v", req.PathNo, req.ResCode, tx.Error)
+				return tx.Error
+			}
+			if prid > 0 {
+				rail.Debugf("Path %v already bound to resource %v", req.PathNo, req.ResCode)
+				return tx.Error
 			}
 
 			// bind resource to path
-			return nil, mysql.GetConn().Exec(`insert into path_resource (path_no, res_code) values (?, ?)`, req.PathNo, req.ResCode).Error
+			return mysql.GetConn().
+				Exec(`INSERT INTO path_resource (path_no, res_code) VALUES (?, ?)`, req.PathNo, req.ResCode).
+				Error
 		})
-		return nil, ex
 	})
 
 	if e == nil {
 		// asynchronously reload the cache of paths and resources
-		loadOnePathResCacheAsync(ec, req.PathNo)
+		loadOnePathResCacheAsync(rail, req.PathNo)
 	}
 	return e
 }
 
 func ListPaths(ec core.Rail, req ListPathReq) (ListPathResp, error) {
+
+	applyCond := func(t *gorm.DB) *gorm.DB {
+		if req.Pgroup != "" {
+			t = t.Where("p.pgroup = ?", req.Pgroup)
+		}
+		if req.ResCode != "" {
+			t = t.Joins("LEFT JOIN path_resource pr ON p.path_no = pr.path_no").
+				Where("pr.res_code = ?", req.ResCode)
+		}
+		if req.Url != "" {
+			t = t.Where("p.url LIKE ?", "%"+req.Url+"%")
+		}
+		if req.Ptype != "" {
+			t = t.Where("p.ptype = ?", req.Ptype)
+		}
+		return t
+	}
+
 	var paths []WPath
 	tx := mysql.GetConn().
 		Table("path p").
-		Select("p.*, pr.res_code ,r.name res_name").
-		Joins("left join path_resource pr on p.path_no = pr.path_no").
-		Joins("left join resource r on pr.res_code = r.code").
-		Order("id desc")
+		Select("p.*").
+		Order("id DESC")
 
-	if req.Pgroup != "" {
-		tx = tx.Where("p.pgroup = ?", req.Pgroup)
-	}
-	if req.ResCode != "" {
-		tx = tx.Where("pr.res_code = ?", req.ResCode)
-	}
-	if req.Url != "" {
-		tx = tx.Where("p.url like ?", "%"+req.Url+"%")
-	}
-	if req.Ptype != "" {
-		tx = tx.Where("p.ptype = ?", req.Ptype)
-	}
-
-	tx = tx.Offset(req.Paging.GetOffset()).
+	tx = applyCond(tx).
+		Offset(req.Paging.GetOffset()).
 		Limit(req.Paging.GetLimit()).
 		Scan(&paths)
 	if tx.Error != nil {
@@ -684,24 +652,11 @@ func ListPaths(ec core.Rail, req ListPathReq) (ListPathResp, error) {
 	var count int
 	tx = mysql.GetConn().
 		Table("path p").
-		Select("count(*)").
-		Joins("left join path_resource pr on p.path_no = pr.path_no").
-		Joins("left join resource r on pr.res_code = r.code")
+		Select("COUNT(*)")
 
-	if req.Pgroup != "" {
-		tx = tx.Where("p.pgroup = ?", req.Pgroup)
-	}
-	if req.ResCode != "" {
-		tx = tx.Where("pr.res_code = ?", req.ResCode)
-	}
-	if req.Url != "" {
-		tx = tx.Where("p.url like ?", req.Url+"%")
-	}
-	if req.Ptype != "" {
-		tx = tx.Where("p.ptype = ?", req.Ptype)
-	}
+	tx = applyCond(tx).
+		Scan(&count)
 
-	tx = tx.Scan(&count)
 	if tx.Error != nil {
 		return ListPathResp{}, tx.Error
 	}
@@ -1096,9 +1051,19 @@ func lockResourceGlobal(ec core.Rail, runnable redis.LRunnable[any]) (any, error
 	return redis.RLockRun(ec, "goauth:resource:global", runnable)
 }
 
+// global lock for resources
+func lockResourceGlobalExec(ec core.Rail, runnable redis.Runnable) error {
+	return redis.RLockExec(ec, "goauth:resource:global", runnable)
+}
+
 // lock for path
 func lockPath(ec core.Rail, pathNo string, runnable redis.LRunnable[any]) (any, error) {
 	return redis.RLockRun(ec, "goauth:path:"+pathNo, runnable)
+}
+
+// lock for path
+func lockPathExec(ec core.Rail, pathNo string, runnable redis.Runnable) error {
+	return redis.RLockExec(ec, "goauth:path:"+pathNo, runnable)
 }
 
 // lock for role-resource cache
