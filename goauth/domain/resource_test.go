@@ -5,18 +5,16 @@ import (
 	"testing"
 
 	"github.com/curtisnewbie/gocommon/common"
-	"github.com/curtisnewbie/miso/core"
-	"github.com/curtisnewbie/miso/mysql"
-	"github.com/curtisnewbie/miso/redis"
-	"github.com/curtisnewbie/miso/server"
+	"github.com/curtisnewbie/miso/miso"
 )
 
 func before(t *testing.T) {
-	core.LoadConfigFromFile("../app-conf-dev.yml", core.EmptyRail())
-	if _, e := redis.InitRedisFromProp(); e != nil {
+	rail := miso.EmptyRail()
+	miso.LoadConfigFromFile("../app-conf-dev.yml", rail)
+	if _, e := miso.InitRedisFromProp(rail); e != nil {
 		t.Fatal(e)
 	}
-	if e := mysql.InitMySqlFromProp(); e != nil {
+	if e := miso.InitMySQLFromProp(); e != nil {
 		t.Fatal(e)
 	}
 }
@@ -29,7 +27,7 @@ func TestUpdatePath(t *testing.T) {
 		Type:   PT_PUBLIC,
 		Group:  "goauth",
 	}
-	e := UpdatePath(core.EmptyRail(), req)
+	e := UpdatePath(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -41,7 +39,7 @@ func TestGetRoleInfo(t *testing.T) {
 	req := RoleInfoReq{
 		RoleNo: "role_554107924873216177918",
 	}
-	resp, e := GetRoleInfo(core.EmptyRail(), req)
+	resp, e := GetRoleInfo(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -56,7 +54,7 @@ func TestCreatePathIfNotExist(t *testing.T) {
 		Url:   "/goauth/open/api/role/resource/add",
 		Group: "goauth",
 	}
-	e := CreatePathIfNotExist(core.EmptyRail(), req, common.NilUser())
+	e := CreatePathIfNotExist(miso.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -69,7 +67,7 @@ func TestDeletePath(t *testing.T) {
 		PathNo: "path_555305367076864208429",
 	}
 
-	e := DeletePath(core.EmptyRail(), req)
+	e := DeletePath(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -82,7 +80,7 @@ func TestCreateRes(t *testing.T) {
 		Name: "GoAuth Test  ",
 	}
 
-	e := CreateResourceIfNotExist(core.EmptyRail(), req, common.NilUser())
+	e := CreateResourceIfNotExist(miso.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -96,7 +94,7 @@ func TestBindPathRes(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := BindPathRes(core.EmptyRail(), req)
+	e := BindPathRes(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -139,7 +137,7 @@ func TestUnbindPathRes(t *testing.T) {
 		PathNo: "path_555326806016000208429",
 	}
 
-	e := UnbindPathRes(core.EmptyRail(), req)
+	e := UnbindPathRes(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -152,7 +150,7 @@ func TestAddRole(t *testing.T) {
 		Name: "Guest",
 	}
 
-	e := AddRole(core.EmptyRail(), req, common.NilUser())
+	e := AddRole(miso.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -166,7 +164,7 @@ func TestAddResToRole(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := AddResToRoleIfNotExist(core.EmptyRail(), req, common.NilUser())
+	e := AddResToRoleIfNotExist(miso.EmptyRail(), req, common.NilUser())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -189,7 +187,7 @@ func TestRemoveResFromRole(t *testing.T) {
 		ResCode: "res_555323073019904208429",
 	}
 
-	e := RemoveResFromRole(core.EmptyRail(), req)
+	e := RemoveResFromRole(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -198,7 +196,7 @@ func TestRemoveResFromRole(t *testing.T) {
 func TestListRoleRes(t *testing.T) {
 	before(t)
 
-	p := core.Paging{
+	p := miso.Paging{
 		Limit: 5,
 		Page:  1,
 	}
@@ -207,7 +205,7 @@ func TestListRoleRes(t *testing.T) {
 		Paging: p,
 	}
 
-	resp, e := ListRoleRes(core.EmptyRail(), req)
+	resp, e := ListRoleRes(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -222,7 +220,7 @@ func TestListRoleRes(t *testing.T) {
 func TestListAllRoleBriefs(t *testing.T) {
 	before(t)
 
-	resp, e := ListAllRoleBriefs(core.EmptyRail())
+	resp, e := ListAllRoleBriefs(miso.EmptyRail())
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -232,7 +230,7 @@ func TestListAllRoleBriefs(t *testing.T) {
 func TestListRoles(t *testing.T) {
 	before(t)
 
-	p := core.Paging{
+	p := miso.Paging{
 		Limit: 5,
 		Page:  1,
 	}
@@ -240,7 +238,7 @@ func TestListRoles(t *testing.T) {
 		Paging: p,
 	}
 
-	resp, e := ListRoles(core.EmptyRail(), req)
+	resp, e := ListRoles(miso.EmptyRail(), req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -255,7 +253,7 @@ func TestListRoles(t *testing.T) {
 func TestTestResourceAccess(t *testing.T) {
 	before(t)
 
-	ec := core.EmptyRail()
+	ec := miso.EmptyRail()
 	LoadPathResCache(ec)
 	LoadRoleResCache(ec)
 
@@ -280,91 +278,91 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 		{
 			resNo:   "res_578477630062593208429",
 			pathNo:  "path_578477630062592208429",
-			url:     "goauth" + server.OpenApiPath("/resource/add"),
+			url:     "goauth" + miso.OpenApiPath("/resource/add"),
 			resName: "Add Resource",
 		},
 		{
 			resNo:   "res_578477630062595208429",
 			pathNo:  "path_578477630062594208429",
-			url:     "goauth" + server.OpenApiPath("/role/resource/add"),
+			url:     "goauth" + miso.OpenApiPath("/role/resource/add"),
 			resName: "Add Resource To Role",
 		},
 		{
 			resNo:   "res_578477630062597208429",
 			pathNo:  "path_578477630062596208429",
-			url:     "goauth" + server.OpenApiPath("/role/resource/remove"),
+			url:     "goauth" + miso.OpenApiPath("/role/resource/remove"),
 			resName: "Remove Resource From Role",
 		},
 		{
 			resNo:   "res_578477630062599208429",
 			pathNo:  "path_578477630062598208429",
-			url:     "goauth" + server.OpenApiPath("/role/add"),
+			url:     "goauth" + miso.OpenApiPath("/role/add"),
 			resName: "Add New Role",
 		},
 		{
 			resNo:   "res_578477630062601208429",
 			pathNo:  "path_578477630062600208429",
-			url:     "goauth" + server.OpenApiPath("/role/list"),
+			url:     "goauth" + miso.OpenApiPath("/role/list"),
 			resName: "List Roles",
 		},
 		{
 			resNo:   "res_578477630062603208429",
 			pathNo:  "path_578477630062602208429",
-			url:     "goauth" + server.OpenApiPath("/role/resource/list"),
+			url:     "goauth" + miso.OpenApiPath("/role/resource/list"),
 			resName: "List Resources of Role",
 		},
 		{
 			resNo:   "res_578477630062605208429",
 			pathNo:  "path_578477630062604208429",
-			url:     "goauth" + server.OpenApiPath("/path/list"),
+			url:     "goauth" + miso.OpenApiPath("/path/list"),
 			resName: "List Paths",
 		},
 		{
 			resNo:   "res_578477630062607208429",
 			pathNo:  "path_578477630062606208429",
-			url:     "goauth" + server.OpenApiPath("/path/resource/bind"),
+			url:     "goauth" + miso.OpenApiPath("/path/resource/bind"),
 			resName: "Bind Path to Resource",
 		},
 		{
 			resNo:   "res_578477630062609208429",
 			pathNo:  "path_578477630062608208429",
-			url:     "goauth" + server.OpenApiPath("/path/resource/unbind"),
+			url:     "goauth" + miso.OpenApiPath("/path/resource/unbind"),
 			resName: "Unbind Path and Resource",
 		},
 		{
 			resNo:   "res_578477630062611208429",
 			pathNo:  "path_578477630062610208429",
-			url:     "goauth" + server.OpenApiPath("/path/delete"),
+			url:     "goauth" + miso.OpenApiPath("/path/delete"),
 			resName: "Delete Path",
 		},
 		{
 			resNo:   "res_578477630062613208429",
 			pathNo:  "path_578477630062612208429",
-			url:     "goauth" + server.OpenApiPath("/path/add"),
+			url:     "goauth" + miso.OpenApiPath("/path/add"),
 			resName: "Add Path",
 		},
 		{
 			resNo:   "res_578477630062615208429",
 			pathNo:  "path_578477630062614208429",
-			url:     "goauth" + server.OpenApiPath("/role/info"),
+			url:     "goauth" + miso.OpenApiPath("/role/info"),
 			resName: "Fetch Role Info",
 		},
 		{
 			resNo:   "res_578477630062617208429",
 			pathNo:  "path_578477630062616208429",
-			url:     "goauth" + server.OpenApiPath("/path/update"),
+			url:     "goauth" + miso.OpenApiPath("/path/update"),
 			resName: "Update Path Info",
 		},
 		{
 			resNo:   "res_585463207870465208429",
 			pathNo:  "path_585463207870464208429",
-			url:     "goauth" + server.OpenApiPath("/role/all"),
+			url:     "goauth" + miso.OpenApiPath("/role/all"),
 			resName: "List All Role Briefs",
 		},
 		{
 			pathNo:  "path_591212357369856208429",
 			resNo:   "res_591212357369857208429",
-			url:     "goauth" + server.OpenApiPath("/resource/list"),
+			url:     "goauth" + miso.OpenApiPath("/resource/list"),
 			resName: "List Resources",
 		},
 	}
@@ -373,10 +371,10 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 	for i, p := range paths {
 		p.url = preprocessUrl(p.url)
 		if p.pathNo == "" {
-			p.pathNo = core.GenIdP("path_")
+			p.pathNo = miso.GenIdP("path_")
 		}
 		if p.resNo == "" {
-			p.resNo = core.GenIdP("res_")
+			p.resNo = miso.GenIdP("res_")
 		}
 		paths[i] = p
 	}
