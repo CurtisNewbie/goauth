@@ -16,6 +16,8 @@ const (
 )
 
 func main() {
+	common.LoadBuiltinPropagationKeys()
+
 	miso.PreServerBootstrap(func(rail miso.Rail) error {
 		if err := scheduleTasks(rail); err != nil { // schedule cron jobs
 			return err
