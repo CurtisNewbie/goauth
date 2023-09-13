@@ -1,0 +1,15 @@
+FROM alpine:3.17
+
+LABEL author="Yongjie Zhuang"
+LABEL descrption="Goauth - Resource mangement & authorization service"
+
+RUN apk --no-cache add tzdata
+
+WORKDIR /usr/src/
+
+# binary is pre-compiled
+COPY goauth_build ./app_goauth
+
+ENV TZ=Asia/Shanghai
+
+CMD ["./app_goauth", "configFile=/usr/src/goauth/config/app-conf-prod.yml"]
