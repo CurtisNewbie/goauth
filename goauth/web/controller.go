@@ -35,15 +35,15 @@ func RegisterWebEndpoints(ec miso.Rail) {
 		-------------------------------
 	*/
 	urlpath := "/open/api/resource/brief/user"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List resources of current user", Method: "GET"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtPublic, Desc: "List resources of current user", Method: "GET"})
 	miso.Get(urlpath, ListAllResBriefsOfRole)
 
 	urlpath = "/open/api/resource/brief/all"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List all resource brief info", Method: "GET"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtPublic, Desc: "List all resource brief info", Method: "GET"})
 	miso.Get(urlpath, ListAllResBriefs)
 
 	urlpath = "/open/api/role/info"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "Get role info", Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtPublic, Desc: "Get role info", Method: "POST"})
 	miso.IPost(urlpath, GetRoleInfo)
 
 	/*
@@ -54,70 +54,70 @@ func RegisterWebEndpoints(ec miso.Rail) {
 		-------------------------------
 	*/
 	urlpath = "/open/api/resource/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin add resource", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, CreateResourceIfNotExist)
 
 	urlpath = "/open/api/resource/remove"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin remove resource", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, DeleteResource)
 
 	urlpath = "/open/api/resource/brief/candidates"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: codeMngResources,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "List all resource candidates for role", Code: codeMngResources,
 		Method: "GET"})
 	miso.Get(urlpath, ListResourceCandidatesForRole)
 
 	urlpath = "/open/api/resource/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin list resources", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, ListResources)
 
 	urlpath = "/open/api/role/resource/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: codeMngResources,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin add resource to role", Code: codeMngResources,
 		Method: "POST"})
 	miso.IPost(urlpath, AddResToRoleIfNotExist)
 
 	urlpath = "/open/api/role/resource/remove"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: codeMngResources,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin remove resource from role", Code: codeMngResources,
 		Method: "POST"})
 	miso.IPost(urlpath, RemoveResFromRole)
 
 	urlpath = "/open/api/role/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin add role", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, AddRole)
 
 	urlpath = "/open/api/role/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin list roles", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, ListRoles)
 
 	urlpath = "/open/api/role/brief/all"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: codeMngResources,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin list role brief info", Code: codeMngResources,
 		Method: "GET"})
 	miso.Get(urlpath, ListAllRoleBriefs)
 
 	urlpath = "/open/api/role/resource/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: codeMngResources,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin list resources of role", Code: codeMngResources,
 		Method: "POST"})
 	miso.IPost(urlpath, ListRoleRes)
 
 	urlpath = "/open/api/path/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin list paths", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, ListPaths)
 
 	urlpath = "/open/api/path/resource/bind"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: codeMngResources,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin bind resource to path", Code: codeMngResources,
 		Method: "POST"})
 	miso.IPost(urlpath, BindPathRes)
 
 	urlpath = "/open/api/path/resource/unbind"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: codeMngResources,
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin unbind resource and path", Code: codeMngResources,
 		Method: "POST"})
 	miso.IPost(urlpath, UnbindPathRes)
 
 	urlpath = "/open/api/path/delete"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin delete path", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, DeletePath)
 
 	urlpath = "/open/api/path/update"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: codeMngResources, Method: "POST"})
+	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PtProtected, Desc: "Admin update path", Code: codeMngResources, Method: "POST"})
 	miso.IPost(urlpath, UpdatePath)
 
 	// internal endpoints

@@ -23,7 +23,7 @@ func main() {
 			return err
 		}
 		web.RegisterWebEndpoints(rail) // register http server endpoints
-		return SubEventBus(rail) // subscribe to event bus
+		return SubEventBus(rail)       // subscribe to event bus
 	})
 
 	miso.BootstrapServer(os.Args) // bootstrap server

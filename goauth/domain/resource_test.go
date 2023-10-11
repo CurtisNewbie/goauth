@@ -24,7 +24,7 @@ func TestUpdatePath(t *testing.T) {
 
 	req := UpdatePathReq{
 		PathNo: "path_578477630062592208429",
-		Type:   PT_PUBLIC,
+		Type:   PtPublic,
 		Group:  "goauth",
 	}
 	e := UpdatePath(miso.EmptyRail(), req)
@@ -50,7 +50,7 @@ func TestCreatePathIfNotExist(t *testing.T) {
 	before(t)
 
 	req := CreatePathReq{
-		Type:  PT_PROTECTED,
+		Type:  PtProtected,
 		Url:   "/goauth/open/api/role/resource/add",
 		Group: "goauth",
 	}
@@ -393,7 +393,7 @@ func TestGenInitialPathRoleRes(t *testing.T) {
 		if i > 0 {
 			initsql += ","
 		}
-		initsql += fmt.Sprintf("\n  ('%s', '%s', '%s', '%s', 'goauth')", p.pathNo, p.url, PT_PROTECTED, p.resNo)
+		initsql += fmt.Sprintf("\n  ('%s', '%s', '%s', '%s', 'goauth')", p.pathNo, p.url, PtProtected, p.resNo)
 	}
 	initsql += ";"
 
