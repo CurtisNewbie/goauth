@@ -167,22 +167,3 @@ func DeletePath(c *gin.Context, ec miso.Rail, req domain.DeletePathReq) (any, er
 func UpdatePath(c *gin.Context, ec miso.Rail, req domain.UpdatePathReq) (any, error) {
 	return nil, domain.UpdatePath(ec, req)
 }
-
-func reportPathOnBootstrapped(ec miso.Rail, url string, doc PathDoc) {
-	miso.PostServerBootstrapped(func(c miso.Rail) error {
-		ptype := doc.Type
-		desc := doc.Desc
-		resCode := doc.Code
-		method := doc.Method
-
-		r := domain.CreatePathReq{
-			Type:    ptype,
-			Desc:    desc,
-			Method:  method,
-			Group:   "goauth",
-			Url:     "/goauth" + url,
-			ResCode: resCode,
-		}
-		return domain.CreatePathIfNotExist(ec, r, common.NilUser())
-	})
-}
