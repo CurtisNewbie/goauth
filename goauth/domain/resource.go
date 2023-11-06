@@ -18,17 +18,36 @@ var (
 	permitted = TestResAccessResp{Valid: true}
 	forbidden = TestResAccessResp{Valid: false}
 
-	roleInfoCache = miso.NewLazyObjectRCache[RoleInfoResp](10 * time.Minute)
+	roleInfoCache = miso.NewLazyORCache[RoleInfoResp]("goauth:role:info", 10*time.Minute,
+		func(rail miso.Rail, key string) (RoleInfoResp, error) {
+			var resp RoleInfoResp
+			tx := miso.GetMySQL().Raw("select role_no, name from role where role_no = ?", key).Scan(&resp)
+			if tx.Error != nil {
+				return resp, tx.Error
+			}
+
+			if tx.RowsAffected < 1 {
+				return resp, miso.NewErr(ErrCodeRoleNotFound, "Role not found")
+			}
+			return resp, nil
+		},
+	)
+
+	// cache for url's resource, url -> CachedUrlRes
+	urlResCache = miso.NewLazyRCache("goauth:url:res", 30*time.Minute, nil)
+
+	// cache for role's resource, role + res -> flag ("1")
+	roleResCache = miso.NewLazyRCache("goauth:role:res", 1*time.Hour, nil)
 )
 
 type PathType string
 
 const (
 	// default roleno for admin
-	DEFAULT_ADMIN_ROLE_NO = "role_554107924873216177918"
+	DefaultAdminRoleNo = "role_554107924873216177918"
 
-	PT_PROTECTED PathType = "PROTECTED"
-	PT_PUBLIC    PathType = "PUBLIC"
+	PtProtected PathType = "PROTECTED"
+	PtPublic    PathType = "PUBLIC"
 )
 
 type PathRes struct {
@@ -278,11 +297,6 @@ type DeleteResourceReq struct {
 	ResCode string `json:"resCode" validation:"notEmpty"`
 }
 
-var (
-	urlResCache  = miso.NewLazyRCache(30 * time.Minute) // cache for url's resource, url -> CachedUrlRes
-	roleResCache = miso.NewLazyRCache(1 * time.Hour)    // cache for role's resource, role + res -> flag ("1")
-)
-
 func DeleteResource(ec miso.Rail, req DeleteResourceReq) error {
 
 	_, e := lockResourceGlobal(ec, func() (any, error) {
@@ -338,7 +352,7 @@ func ListResourceCandidatesForRole(ec miso.Rail, roleNo string) ([]ResBrief, err
 func ListAllResBriefsOfRole(ec miso.Rail, roleNo string) ([]ResBrief, error) {
 	var res []ResBrief
 
-	if roleNo == DEFAULT_ADMIN_ROLE_NO {
+	if roleNo == DefaultAdminRoleNo {
 		return ListAllResBriefs(ec)
 	}
 
@@ -427,18 +441,7 @@ func loadOnePathResCacheAsync(ec miso.Rail, pathNo string) {
 }
 
 func GetRoleInfo(ec miso.Rail, req RoleInfoReq) (RoleInfoResp, error) {
-	resp, _, err := roleInfoCache.GetElse(ec, req.RoleNo, func() (RoleInfoResp, bool, error) {
-		var resp RoleInfoResp
-		tx := miso.GetMySQL().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
-		if tx.Error != nil {
-			return resp, false, tx.Error
-		}
-
-		if tx.RowsAffected < 1 {
-			return resp, false, miso.NewWebErrCode(EC_ROLE_NOT_FOUND, "Role not found")
-		}
-		return resp, true, nil
-	})
+	resp, err := roleInfoCache.Get(ec, req.RoleNo)
 	return resp, err
 }
 
@@ -582,7 +585,7 @@ func BindPathRes(rail miso.Rail, req BindPathResReq) error {
 			}
 			if resId < 1 {
 				rail.Errorf("Resource %v not found", req.ResCode)
-				return miso.NewWebErr("Resource not found")
+				return miso.NewErr("Resource not found")
 			}
 
 			// check if the path is already bound to current resource
@@ -702,7 +705,7 @@ func AddResToRoleIfNotExist(ec miso.Rail, req AddRoleResReq, user common.User) e
 				return false, tx.Error
 			}
 			if resId < 1 {
-				return false, miso.NewWebErr("Resource not found")
+				return false, miso.NewErr("Resource not found")
 			}
 
 			// check if role-resource relation exists
@@ -809,7 +812,7 @@ func TestResourceAccess(ec miso.Rail, req TestResAccessReq) (TestResAccessResp, 
 	url := req.Url
 	roleNo := req.RoleNo
 
-	if roleNo == DEFAULT_ADMIN_ROLE_NO {
+	if roleNo == DefaultAdminRoleNo {
 		return permitted, nil
 	}
 
@@ -825,7 +828,7 @@ func TestResourceAccess(ec miso.Rail, req TestResAccessReq) (TestResAccessResp, 
 	}
 
 	// public path type, doesn't require access to resource
-	if cur.Ptype == PT_PUBLIC {
+	if cur.Ptype == PtPublic {
 		return permitted, nil
 	}
 
@@ -931,7 +934,7 @@ func lookupUrlRes(ec miso.Rail, url string, method string) (CachedUrlRes, error)
 		return CachedUrlRes{}, e
 	}
 	if js == "" {
-		return CachedUrlRes{}, miso.NewWebErr(fmt.Sprintf("Unable to find path '%s'", url))
+		return CachedUrlRes{}, miso.NewErr(fmt.Sprintf("Unable to find path '%s'", url))
 	}
 
 	var cur CachedUrlRes
@@ -1038,7 +1041,7 @@ func findPathRes(pathNo string) (ExtendedPathRes, error) {
 	}
 
 	if tx.RowsAffected < 1 {
-		return ep, miso.NewWebErr("Path not found")
+		return ep, miso.NewErr("Path not found")
 	}
 
 	return ep, nil

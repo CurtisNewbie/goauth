@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/curtisnewbie/goauth/domain"
 	"github.com/curtisnewbie/gocommon/common"
+	"github.com/curtisnewbie/gocommon/goauth"
 	"github.com/curtisnewbie/miso/miso"
 	"github.com/gin-gonic/gin"
 )
@@ -19,12 +20,11 @@ type PathDoc struct {
 	Code   string
 }
 
-func RegisterWebEndpoints(ec miso.Rail) {
-	miso.PostServerBootstrapped(func(c miso.Rail) error {
-		return domain.CreateResourceIfNotExist(ec, domain.CreateResReq{
-			Code: codeMngResources,
-			Name: nameMngReesources,
-		}, common.NilUser())
+func RegisterWebEndpoints(rail miso.Rail) {
+
+	goauth.ReportPathsOnBootstrapped(rail)
+	goauth.ReportResourcesOnBootstrapped(rail, []goauth.AddResourceReq{
+		{Code: codeMngResources, Name: nameMngReesources},
 	})
 
 	/*
@@ -34,17 +34,11 @@ func RegisterWebEndpoints(ec miso.Rail) {
 
 		-------------------------------
 	*/
-	urlpath := "/open/api/resource/brief/user"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List resources of current user", Method: "GET"})
-	miso.Get(urlpath, ListAllResBriefsOfRole)
-
-	urlpath = "/open/api/resource/brief/all"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "List all resource brief info", Method: "GET"})
-	miso.Get(urlpath, ListAllResBriefs)
-
-	urlpath = "/open/api/role/info"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PUBLIC, Desc: "Get role info", Method: "POST"})
-	miso.IPost(urlpath, GetRoleInfo)
+	miso.BaseRoute("/open/api").Group(
+		miso.Get("/resource/brief/user", ListAllResBriefsOfRole, goauth.Public("List resources of current user")),
+		miso.Get("/resource/brief/all", ListAllResBriefs, goauth.Public("List all resource brief info")),
+		miso.IPost("/open/api/role/info", GetRoleInfo, goauth.Public("Get role info")),
+	)
 
 	/*
 		------------------------------
@@ -53,92 +47,45 @@ func RegisterWebEndpoints(ec miso.Rail) {
 
 		-------------------------------
 	*/
-	urlpath = "/open/api/resource/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, CreateResourceIfNotExist)
-
-	urlpath = "/open/api/resource/remove"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, DeleteResource)
-
-	urlpath = "/open/api/resource/brief/candidates"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "List all resource candidates for role", Code: codeMngResources,
-		Method: "GET"})
-	miso.Get(urlpath, ListResourceCandidatesForRole)
-
-	urlpath = "/open/api/resource/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, ListResources)
-
-	urlpath = "/open/api/role/resource/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add resource to role", Code: codeMngResources,
-		Method: "POST"})
-	miso.IPost(urlpath, AddResToRoleIfNotExist)
-
-	urlpath = "/open/api/role/resource/remove"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin remove resource from role", Code: codeMngResources,
-		Method: "POST"})
-	miso.IPost(urlpath, RemoveResFromRole)
-
-	urlpath = "/open/api/role/add"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin add role", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, AddRole)
-
-	urlpath = "/open/api/role/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list roles", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, ListRoles)
-
-	urlpath = "/open/api/role/brief/all"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list role brief info", Code: codeMngResources,
-		Method: "GET"})
-	miso.Get(urlpath, ListAllRoleBriefs)
-
-	urlpath = "/open/api/role/resource/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list resources of role", Code: codeMngResources,
-		Method: "POST"})
-	miso.IPost(urlpath, ListRoleRes)
-
-	urlpath = "/open/api/path/list"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin list paths", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, ListPaths)
-
-	urlpath = "/open/api/path/resource/bind"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin bind resource to path", Code: codeMngResources,
-		Method: "POST"})
-	miso.IPost(urlpath, BindPathRes)
-
-	urlpath = "/open/api/path/resource/unbind"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin unbind resource and path", Code: codeMngResources,
-		Method: "POST"})
-	miso.IPost(urlpath, UnbindPathRes)
-
-	urlpath = "/open/api/path/delete"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin delete path", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, DeletePath)
-
-	urlpath = "/open/api/path/update"
-	reportPathOnBootstrapped(ec, urlpath, PathDoc{Type: domain.PT_PROTECTED, Desc: "Admin update path", Code: codeMngResources, Method: "POST"})
-	miso.IPost(urlpath, UpdatePath)
+	miso.BaseRoute("/open/api").Group(
+		miso.IPost("/resource/add", CreateResourceIfNotExist, goauth.Protected("Admin add resource", codeMngResources)),
+		miso.IPost("/resource/remove", DeleteResource, goauth.Protected("Admin remove resource", codeMngResources)),
+		miso.Get("/resource/brief/candidates", ListResourceCandidatesForRole, goauth.Protected("List all resource candidates for role", codeMngResources)),
+		miso.IPost("/resource/list", ListResources, goauth.Protected("Admin list resources", codeMngResources)),
+		miso.IPost("/role/resource/add", AddResToRoleIfNotExist, goauth.Protected("Admin add resource to role", codeMngResources)),
+		miso.IPost("/role/resource/remove", RemoveResFromRole, goauth.Protected("Admin remove resource from role", codeMngResources)),
+		miso.IPost("/role/add", AddRole, goauth.Protected("Admin add role", codeMngResources)),
+		miso.IPost("/role/list", ListRoles, goauth.Protected("Admin list roles", codeMngResources)),
+		miso.Get("/role/brief/all", ListAllRoleBriefs, goauth.Protected("Admin list role brief info", codeMngResources)),
+		miso.IPost("/role/resource/list", ListRoleRes, goauth.Protected("Admin list resources of role", codeMngResources)),
+		miso.IPost("/path/list", ListPaths, goauth.Protected("Admin list paths", codeMngResources)),
+		miso.IPost("/path/resource/bind", BindPathRes, goauth.Protected("Admin bind resource to path", codeMngResources)),
+		miso.IPost("/path/resource/unbind", UnbindPathRes, goauth.Protected("Admin unbind resource and path", codeMngResources)),
+		miso.IPost("/path/delete", DeletePath, goauth.Protected("Admin delete path", codeMngResources)),
+		miso.IPost("/path/update", UpdatePath, goauth.Protected("Admin update path", codeMngResources)),
+	)
 
 	// internal endpoints
-	miso.IPost("/remote/resource/add",
-		func(c *gin.Context, rail miso.Rail, req domain.CreateResReq) (any, error) {
-			user := common.GetUser(rail)
-			return nil, domain.CreateResourceIfNotExist(rail, req, user)
-		})
-	miso.IPost("/remote/path/resource/access-test",
-		func(c *gin.Context, rail miso.Rail, req domain.TestResAccessReq) (any, error) {
-			return domain.TestResourceAccess(rail, req)
-		})
-	miso.IPost("/remote/path/add",
-		func(c *gin.Context, rail miso.Rail, req domain.CreatePathReq) (any, error) {
-			user := common.GetUser(rail)
-			return nil, domain.CreatePathIfNotExist(rail, req, user)
-		})
-	miso.IPost("/remote/role/info",
-		func(c *gin.Context, rail miso.Rail, req domain.RoleInfoReq) (any, error) {
-			return domain.GetRoleInfo(rail, req)
-		})
+	miso.BaseRoute("/remote").Group(
+		miso.IPost("/resource/add",
+			func(c *gin.Context, rail miso.Rail, req domain.CreateResReq) (any, error) {
+				user := common.GetUser(rail)
+				return nil, domain.CreateResourceIfNotExist(rail, req, user)
+			}),
+		miso.IPost("/path/resource/access-test",
+			func(c *gin.Context, rail miso.Rail, req domain.TestResAccessReq) (any, error) {
+				return domain.TestResourceAccess(rail, req)
+			}),
+		miso.IPost("/path/add",
+			func(c *gin.Context, rail miso.Rail, req domain.CreatePathReq) (any, error) {
+				user := common.GetUser(rail)
+				return nil, domain.CreatePathIfNotExist(rail, req, user)
+			}),
+		miso.IPost("/role/info",
+			func(c *gin.Context, rail miso.Rail, req domain.RoleInfoReq) (any, error) {
+				return domain.GetRoleInfo(rail, req)
+			}),
+	)
 }
 
 func ListAllResBriefsOfRole(c *gin.Context, ec miso.Rail) (any, error) {
@@ -219,23 +166,4 @@ func DeletePath(c *gin.Context, ec miso.Rail, req domain.DeletePathReq) (any, er
 
 func UpdatePath(c *gin.Context, ec miso.Rail, req domain.UpdatePathReq) (any, error) {
 	return nil, domain.UpdatePath(ec, req)
-}
-
-func reportPathOnBootstrapped(ec miso.Rail, url string, doc PathDoc) {
-	miso.PostServerBootstrapped(func(c miso.Rail) error {
-		ptype := doc.Type
-		desc := doc.Desc
-		resCode := doc.Code
-		method := doc.Method
-
-		r := domain.CreatePathReq{
-			Type:    ptype,
-			Desc:    desc,
-			Method:  method,
-			Group:   "goauth",
-			Url:     "/goauth" + url,
-			ResCode: resCode,
-		}
-		return domain.CreatePathIfNotExist(ec, r, common.NilUser())
-	})
 }
