@@ -63,6 +63,9 @@ func RegisterWebEndpoints(rail miso.Rail) {
 			}),
 		miso.IPost("/path/resource/access-test",
 			func(c *gin.Context, rail miso.Rail, req domain.TestResAccessReq) (any, error) {
+				timer := miso.NewPromTimer("goauth_resource_access_test_duration")
+				defer timer.ObserveDuration()
+
 				return domain.TestResourceAccess(rail, req)
 			}),
 		miso.IPost("/path/add",
