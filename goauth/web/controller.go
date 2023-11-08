@@ -27,42 +27,31 @@ func RegisterWebEndpoints(rail miso.Rail) {
 		{Code: codeMngResources, Name: nameMngReesources},
 	})
 
-	/*
-		------------------------------
-
-		public endpoints
-
-		-------------------------------
-	*/
-	miso.BaseRoute("/open/api").Group(
-		miso.Get("/resource/brief/user", ListAllResBriefsOfRole, goauth.Public("List resources of current user")),
-		miso.Get("/resource/brief/all", ListAllResBriefs, goauth.Public("List all resource brief info")),
-		miso.IPost("/open/api/role/info", GetRoleInfo, goauth.Public("Get role info")),
+	miso.BaseRoute("/open/api/resource").Group(
+		miso.IPost("/add", CreateResourceIfNotExist).Extra(goauth.Protected("Admin add resource", codeMngResources)),
+		miso.IPost("/remove", DeleteResource).Extra(goauth.Protected("Admin remove resource", codeMngResources)),
+		miso.Get("/brief/candidates", ListResourceCandidatesForRole).Extra(goauth.Protected("List all resource candidates for role", codeMngResources)),
+		miso.IPost("/list", ListResources).Extra(goauth.Protected("Admin list resources", codeMngResources)),
+		miso.Get("/brief/user", ListAllResBriefsOfRole).Extra(goauth.Public("List resources of current user")),
+		miso.Get("/brief/all", ListAllResBriefs).Extra(goauth.Public("List all resource brief info")),
 	)
 
-	/*
-		------------------------------
+	miso.BaseRoute("/open/api/role").Group(
+		miso.IPost("/resource/add", AddResToRoleIfNotExist).Extra(goauth.Protected("Admin add resource to role", codeMngResources)),
+		miso.IPost("/resource/remove", RemoveResFromRole).Extra(goauth.Protected("Admin remove resource from role", codeMngResources)),
+		miso.IPost("/add", AddRole).Extra(goauth.Protected("Admin add role", codeMngResources)),
+		miso.IPost("/list", ListRoles).Extra(goauth.Protected("Admin list roles", codeMngResources)),
+		miso.Get("/brief/all", ListAllRoleBriefs).Extra(goauth.Protected("Admin list role brief info", codeMngResources)),
+		miso.IPost("/resource/list", ListRoleRes).Extra(goauth.Protected("Admin list resources of role", codeMngResources)),
+		miso.IPost("/info", GetRoleInfo).Extra(goauth.Public("Get role info")),
+	)
 
-		protected endpoints
-
-		-------------------------------
-	*/
-	miso.BaseRoute("/open/api").Group(
-		miso.IPost("/resource/add", CreateResourceIfNotExist, goauth.Protected("Admin add resource", codeMngResources)),
-		miso.IPost("/resource/remove", DeleteResource, goauth.Protected("Admin remove resource", codeMngResources)),
-		miso.Get("/resource/brief/candidates", ListResourceCandidatesForRole, goauth.Protected("List all resource candidates for role", codeMngResources)),
-		miso.IPost("/resource/list", ListResources, goauth.Protected("Admin list resources", codeMngResources)),
-		miso.IPost("/role/resource/add", AddResToRoleIfNotExist, goauth.Protected("Admin add resource to role", codeMngResources)),
-		miso.IPost("/role/resource/remove", RemoveResFromRole, goauth.Protected("Admin remove resource from role", codeMngResources)),
-		miso.IPost("/role/add", AddRole, goauth.Protected("Admin add role", codeMngResources)),
-		miso.IPost("/role/list", ListRoles, goauth.Protected("Admin list roles", codeMngResources)),
-		miso.Get("/role/brief/all", ListAllRoleBriefs, goauth.Protected("Admin list role brief info", codeMngResources)),
-		miso.IPost("/role/resource/list", ListRoleRes, goauth.Protected("Admin list resources of role", codeMngResources)),
-		miso.IPost("/path/list", ListPaths, goauth.Protected("Admin list paths", codeMngResources)),
-		miso.IPost("/path/resource/bind", BindPathRes, goauth.Protected("Admin bind resource to path", codeMngResources)),
-		miso.IPost("/path/resource/unbind", UnbindPathRes, goauth.Protected("Admin unbind resource and path", codeMngResources)),
-		miso.IPost("/path/delete", DeletePath, goauth.Protected("Admin delete path", codeMngResources)),
-		miso.IPost("/path/update", UpdatePath, goauth.Protected("Admin update path", codeMngResources)),
+	miso.BaseRoute("/open/api/path").Group(
+		miso.IPost("/list", ListPaths).Extra(goauth.Protected("Admin list paths", codeMngResources)),
+		miso.IPost("/resource/bind", BindPathRes).Extra(goauth.Protected("Admin bind resource to path", codeMngResources)),
+		miso.IPost("/resource/unbind", UnbindPathRes).Extra(goauth.Protected("Admin unbind resource and path", codeMngResources)),
+		miso.IPost("/delete", DeletePath).Extra(goauth.Protected("Admin delete path", codeMngResources)),
+		miso.IPost("/update", UpdatePath).Extra(goauth.Protected("Admin update path", codeMngResources)),
 	)
 
 	// internal endpoints
