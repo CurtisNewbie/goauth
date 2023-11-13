@@ -48,13 +48,13 @@ func SubEventBus(rail miso.Rail) error {
 
 func scheduleTasks(rail miso.Rail) error {
 	// distributed tasks
-	var err error = miso.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec miso.Rail) error {
+	var err error = miso.ScheduleDistributedTask("*/15 * * * *", false, "LoadRoleResCacheTask", func(ec miso.Rail) error {
 		return domain.LoadRoleResCache(ec)
 	})
 	if err != nil {
 		return err
 	}
-	err = miso.ScheduleNamedDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec miso.Rail) error {
+	err = miso.ScheduleDistributedTask("*/1 * * * *", false, "LoadPathResCacheTask", func(ec miso.Rail) error {
 		return domain.LoadPathResCache(ec)
 	})
 	if err != nil {
