@@ -54,7 +54,7 @@ func scheduleTasks(rail miso.Rail) error {
 	if err != nil {
 		return err
 	}
-	err = miso.ScheduleDistributedTask("*/1 * * * *", false, "LoadPathResCacheTask", func(ec miso.Rail) error {
+	err = miso.ScheduleDistributedTask("*/15 * * * *", false, "LoadPathResCacheTask", func(ec miso.Rail) error {
 		return domain.LoadPathResCache(ec)
 	})
 	if err != nil {
