@@ -12,4 +12,4 @@ COPY goauth_build ./app_goauth
 
 ENV TZ=Asia/Shanghai
 
-CMD ["./app_goauth", "configFile=/usr/src/goauth/config/app-conf-prod.yml"]
+CMD ["./app_goauth", "configFile=/usr/src/goauth/config/conf.yml"]

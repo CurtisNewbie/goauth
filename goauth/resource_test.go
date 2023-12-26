@@ -1,4 +1,4 @@
-package domain
+package goauth
 
 import (
 	"testing"

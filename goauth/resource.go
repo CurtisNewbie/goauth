@@ -1,4 +1,4 @@
-package domain
+package goauth
 
 import (
 	"crypto/md5"
@@ -18,7 +18,7 @@ var (
 	permitted = TestResAccessResp{Valid: true}
 	forbidden = TestResAccessResp{Valid: false}
 
-	roleInfoCache = miso.NewLazyORCache[RoleInfoResp]("goauth:role:info", 10*time.Minute,
+	roleInfoCache = miso.NewLazyORCache[RoleInfoResp]("goauth:role:info",
 		func(rail miso.Rail, key string) (RoleInfoResp, error) {
 			var resp RoleInfoResp
 			tx := miso.GetMySQL().Raw("select role_no, name from role where role_no = ?", key).Scan(&resp)
@@ -31,13 +31,16 @@ var (
 			}
 			return resp, nil
 		},
-	)
+		miso.RCacheConfig{
+			Exp:    10 * time.Minute,
+			NoSync: true,
+		})
 
 	// cache for url's resource, url -> CachedUrlRes
-	urlResCache = miso.NewLazyRCache("goauth:url:res", 30*time.Minute, nil)
+	urlResCache = miso.NewLazyRCache("goauth:url:res", nil, miso.RCacheConfig{Exp: 30 * time.Minute})
 
 	// cache for role's resource, role + res -> flag ("1")
-	roleResCache = miso.NewLazyRCache("goauth:role:res", 1*time.Hour, nil)
+	roleResCache = miso.NewLazyRCache("goauth:role:res", nil, miso.RCacheConfig{Exp: 1 * time.Hour})
 )
 
 type PathType string

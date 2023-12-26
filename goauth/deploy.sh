@@ -12,11 +12,11 @@ dockerfile="./Dockerfile_local"
 # ---------
 
 echo "Building Go app for platform $os/$arch to binary '$build'"
-CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -o "$build"
+CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -o "$build" cmd/main.go
 
 ssh  "alphaboi@curtisnewbie.com" "rm -rv ${remote_build_path}*"
 
-rsync -av -e ssh ./app-conf-prod.yml "${remote}:${remote_config_path}"
+rsync -av -e ssh ./conf-prod.yml "${remote}:${remote_config_path}/conf.yml"
 if [ ! $? -eq 0 ]; then
     exit -1
 fi
