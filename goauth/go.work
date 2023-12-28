@@ -1,4 +1,0 @@
-go 1.21.0
-
-use .
-replace github.com/curtisnewbie/miso => /home/zhuangyongj/git/miso
