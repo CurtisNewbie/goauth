@@ -12,6 +12,10 @@ const (
 	nameMngReesources = "Manage Resources Access"
 )
 
+var (
+	accessTimeHisto = miso.NewPromHisto("goauth_resource_access_test_duration_seconds")
+)
+
 type PathDoc struct {
 	Desc   string
 	Type   PathType
@@ -62,7 +66,7 @@ func RegisterWebEndpoints(rail miso.Rail) error {
 			}),
 		miso.IPost("/path/resource/access-test",
 			func(c *gin.Context, rail miso.Rail, req TestResAccessReq) (any, error) {
-				timer := miso.NewPromTimer("goauth_resource_access_test_duration")
+				timer := miso.NewHistTimer(accessTimeHisto)
 				defer timer.ObserveDuration()
 
 				return TestResourceAccess(rail, req)
