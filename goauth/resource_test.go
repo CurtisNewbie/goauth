@@ -13,7 +13,7 @@ func before(t *testing.T) {
 	if _, e := miso.InitRedisFromProp(rail); e != nil {
 		t.Fatal(e)
 	}
-	if e := miso.InitMySQLFromProp(); e != nil {
+	if e := miso.InitMySQLFromProp(rail); e != nil {
 		t.Fatal(e)
 	}
 }
