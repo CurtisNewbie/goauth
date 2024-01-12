@@ -13,12 +13,6 @@ const (
 )
 
 func SubEventBus(rail miso.Rail) error {
-
-	miso.NewEventBus(addPathEventBus)
-	miso.NewEventBus(addPathEventBusV2)
-	miso.NewEventBus(addResourceEventBus)
-	miso.NewEventBus(addResourceEventBusV2)
-
 	// event bus to report path asynchronously
 	miso.SubEventBus(addPathEventBus, 2, ListenAddPathEvent)
 	miso.SubEventBus(addPathEventBusV2, 2, ListenAddPathEvent)
