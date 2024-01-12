@@ -1,4 +1,6 @@
-CREATE TABLE IF NOT EXISTS path (
+create database if not exists goauth;
+
+CREATE TABLE IF NOT EXISTS goauth.path (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `pgroup` varchar(20) NOT NULL DEFAULT '' COMMENT 'path group',
   `path_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'path no',
@@ -15,7 +17,7 @@ CREATE TABLE IF NOT EXISTS path (
   KEY `path_no` (`path_no`)
 ) ENGINE=InnoDB COMMENT='Paths';
 
-CREATE TABLE IF NOT EXISTS path_resource (
+CREATE TABLE IF NOT EXISTS goauth.path_resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `path_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'path no',
   `res_code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code',
@@ -28,7 +30,7 @@ CREATE TABLE IF NOT EXISTS path_resource (
   KEY (`path_no`, `res_code`)
 ) ENGINE=InnoDB COMMENT='Path Resource';
 
-CREATE TABLE IF NOT EXISTS resource (
+CREATE TABLE IF NOT EXISTS goauth.resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code',
   `name` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource name',
@@ -41,7 +43,7 @@ CREATE TABLE IF NOT EXISTS resource (
   KEY `code` (`code`)
 ) ENGINE=InnoDB COMMENT='Resources';
 
-CREATE TABLE IF NOT EXISTS role_resource (
+CREATE TABLE IF NOT EXISTS goauth.role_resource (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `role_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'role no',
   `res_code` varchar(32) NOT NULL DEFAULT '' COMMENT 'resource code',
@@ -54,7 +56,7 @@ CREATE TABLE IF NOT EXISTS role_resource (
   KEY `role_no` (`role_no`)
 ) ENGINE=InnoDB COMMENT='Role resources';
 
-CREATE TABLE IF NOT EXISTS role (
+CREATE TABLE IF NOT EXISTS goauth.role (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `role_no` varchar(32) NOT NULL DEFAULT '' COMMENT 'role no',
   `name` varchar(32) NOT NULL DEFAULT '' COMMENT 'name of role',
@@ -68,4 +70,4 @@ CREATE TABLE IF NOT EXISTS role (
 ) ENGINE=InnoDB COMMENT='Roles';
 
 -- default one for administrator, with this role, all paths can be accessed
-INSERT INTO role(role_no, name) VALUES ('role_554107924873216177918', 'Super Administrator');
+INSERT INTO goauth.role(role_no, name) VALUES ('role_554107924873216177918', 'Super Administrator');
