@@ -41,13 +41,6 @@ rabbitmq:
   password: "${rabbitmqpassword}"
   vhost: "/"
 
-tracing.propagation.keys:
-  - id
-  - userno
-  - username
-  - role
-  - services
-
 logging.rolling.file:
   "/usr/src/goauth/logs/goauth.log"
 

@@ -35,14 +35,4 @@ rabbitmq:
   password: guest
   vhost: "/"
 
-tracing.propagation.keys:
-  - id
-  - userno
-  - username
-  - role
-  - services
-
-# logging.rolling.file:
-#   "goauth.log"
-
 logging.level: info

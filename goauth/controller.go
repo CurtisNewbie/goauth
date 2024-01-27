@@ -8,8 +8,7 @@ import (
 )
 
 const (
-	codeMngResources  = "manage-resources"
-	nameMngReesources = "Manage Resources Access"
+	ResourceManageResources = "manage-resources"
 )
 
 var (
@@ -25,40 +24,91 @@ type PathDoc struct {
 
 func RegisterWebEndpoints(rail miso.Rail) error {
 
-	goauth.ReportPathsOnBootstrapped(rail)
-	goauth.ReportResourcesOnBootstrapped(rail, []goauth.AddResourceReq{
-		{Code: codeMngResources, Name: nameMngReesources},
+	goauth.ReportOnBoostrapped(rail, []goauth.AddResourceReq{
+		{Code: ResourceManageResources, Name: "Manage Resources Access"},
 	})
 
 	miso.BaseRoute("/open/api/resource").Group(
-		miso.IPost("/add", CreateResourceIfNotExistEp).Extra(goauth.Protected("Admin add resource", codeMngResources)),
-		miso.IPost("/remove", DeleteResourceEp).Extra(goauth.Protected("Admin remove resource", codeMngResources)),
-		miso.Get("/brief/candidates", ListResourceCandidatesForRoleEp).Extra(goauth.Protected("List all resource candidates for role", codeMngResources)),
-		miso.IPost("/list", ListResourcesEp).Extra(goauth.Protected("Admin list resources", codeMngResources)),
-		miso.Get("/brief/user", ListAllResBriefsOfRoleEp).Extra(goauth.Public("List resources of current user")),
-		miso.Get("/brief/all", ListAllResBriefsEp).Extra(goauth.Public("List all resource brief info")),
+		miso.IPost("/add", CreateResourceIfNotExistEp).
+			Desc("Admin add resource").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/remove", DeleteResourceEp).
+			Desc("Admin remove resource").
+			Resource(ResourceManageResources),
+
+		miso.Get("/brief/candidates", ListResourceCandidatesForRoleEp).
+			Desc("List all resource candidates for role").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/list", ListResourcesEp).
+			Desc("Admin list resources").
+			Resource(ResourceManageResources),
+
+		miso.Get("/brief/user", ListAllResBriefsOfRoleEp).
+			Desc("List resources of current user").
+			Public(),
+
+		miso.Get("/brief/all", ListAllResBriefsEp).
+			Desc("List all resource brief info").
+			Public(),
 	)
 
 	miso.BaseRoute("/open/api/role").Group(
-		miso.IPost("/resource/add", AddResToRoleIfNotExistEp).Extra(goauth.Protected("Admin add resource to role", codeMngResources)),
-		miso.IPost("/resource/remove", RemoveResFromRoleEp).Extra(goauth.Protected("Admin remove resource from role", codeMngResources)),
-		miso.IPost("/add", AddRoleEp).Extra(goauth.Protected("Admin add role", codeMngResources)),
-		miso.IPost("/list", ListRolesEp).Extra(goauth.Protected("Admin list roles", codeMngResources)),
-		miso.Get("/brief/all", ListAllRoleBriefsEp).Extra(goauth.Protected("Admin list role brief info", codeMngResources)),
-		miso.IPost("/resource/list", ListRoleResEp).Extra(goauth.Protected("Admin list resources of role", codeMngResources)),
-		miso.IPost("/info", GetRoleInfoEp).Extra(goauth.Public("Get role info")),
+		miso.IPost("/resource/add", AddResToRoleIfNotExistEp).
+			Desc("Admin add resource to role").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/resource/remove", RemoveResFromRoleEp).
+			Desc("Admin remove resource from role").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/add", AddRoleEp).
+			Desc("Admin add role").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/list", ListRolesEp).
+			Desc("Admin list roles").
+			Resource(ResourceManageResources),
+
+		miso.Get("/brief/all", ListAllRoleBriefsEp).
+			Desc("Admin list role brief info").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/resource/list", ListRoleResEp).
+			Desc("Admin list resources of role").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/info", GetRoleInfoEp).
+			Desc("Get role info").
+			Public(),
 	)
 
 	miso.BaseRoute("/open/api/path").Group(
-		miso.IPost("/list", ListPathsEp).Extra(goauth.Protected("Admin list paths", codeMngResources)),
-		miso.IPost("/resource/bind", BindPathResEp).Extra(goauth.Protected("Admin bind resource to path", codeMngResources)),
-		miso.IPost("/resource/unbind", UnbindPathResEp).Extra(goauth.Protected("Admin unbind resource and path", codeMngResources)),
-		miso.IPost("/delete", DeletePathEp).Extra(goauth.Protected("Admin delete path", codeMngResources)),
-		miso.IPost("/update", UpdatePathEp).Extra(goauth.Protected("Admin update path", codeMngResources)),
+		miso.IPost("/list", ListPathsEp).
+			Desc("Admin list paths").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/resource/bind", BindPathResEp).
+			Desc("Admin bind resource to path").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/resource/unbind", UnbindPathResEp).
+			Desc("Admin unbind resource and path").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/delete", DeletePathEp).
+			Desc("Admin delete path").
+			Resource(ResourceManageResources),
+
+		miso.IPost("/update", UpdatePathEp).
+			Desc("Admin update path").
+			Resource(ResourceManageResources),
 	)
 
 	// internal endpoints
 	miso.BaseRoute("/remote").Group(
+
 		miso.IPost("/resource/add",
 			func(c *gin.Context, rail miso.Rail, req CreateResReq) (any, error) {
 				user := common.GetUser(rail)
