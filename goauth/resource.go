@@ -815,10 +815,6 @@ func TestResourceAccess(ec miso.Rail, req TestResAccessReq) (TestResAccessResp, 
 	url := req.Url
 	roleNo := req.RoleNo
 
-	if roleNo == DefaultAdminRoleNo {
-		return permitted, nil
-	}
-
 	// some sanitization & standardization for the url
 	url = preprocessUrl(url)
 	method := strings.ToUpper(strings.TrimSpace(req.Method))
@@ -864,6 +860,10 @@ func TestResourceAccess(ec miso.Rail, req TestResAccessReq) (TestResAccessResp, 
 }
 
 func checkRoleRes(ec miso.Rail, roleNo string, resCode string) (bool, error) {
+	if roleNo == DefaultAdminRoleNo {
+		return true, nil
+	}
+
 	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resCode))
 	if e != nil {
 		return false, e
