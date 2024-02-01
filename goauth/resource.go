@@ -18,29 +18,17 @@ var (
 	permitted = TestResAccessResp{Valid: true}
 	forbidden = TestResAccessResp{Valid: false}
 
-	roleInfoCache = miso.NewLazyORCache[RoleInfoResp]("goauth:role:info",
-		func(rail miso.Rail, key string) (RoleInfoResp, error) {
-			var resp RoleInfoResp
-			tx := miso.GetMySQL().Raw("select role_no, name from role where role_no = ?", key).Scan(&resp)
-			if tx.Error != nil {
-				return resp, tx.Error
-			}
-
-			if tx.RowsAffected < 1 {
-				return resp, miso.NewErr(ErrCodeRoleNotFound, "Role not found")
-			}
-			return resp, nil
-		},
+	roleInfoCache = miso.NewRCache[RoleInfoResp]("goauth:role:info",
 		miso.RCacheConfig{
 			Exp:    10 * time.Minute,
 			NoSync: true,
 		})
 
 	// cache for url's resource, url -> CachedUrlRes
-	urlResCache = miso.NewLazyRCache("goauth:url:res", nil, miso.RCacheConfig{Exp: 30 * time.Minute})
+	urlResCache = miso.NewRCache[string]("goauth:url:res", miso.RCacheConfig{Exp: 30 * time.Minute})
 
 	// cache for role's resource, role + res -> flag ("1")
-	roleResCache = miso.NewLazyRCache("goauth:role:res", nil, miso.RCacheConfig{Exp: 1 * time.Hour})
+	roleResCache = miso.NewRCache[string]("goauth:role:res", miso.RCacheConfig{Exp: 1 * time.Hour})
 )
 
 type PathType string
@@ -444,7 +432,18 @@ func loadOnePathResCacheAsync(ec miso.Rail, pathNo string) {
 }
 
 func GetRoleInfo(ec miso.Rail, req RoleInfoReq) (RoleInfoResp, error) {
-	resp, err := roleInfoCache.Get(ec, req.RoleNo)
+	resp, err := roleInfoCache.Get(ec, req.RoleNo, func(rail miso.Rail, key string) (RoleInfoResp, error) {
+		var resp RoleInfoResp
+		tx := miso.GetMySQL().Raw("select role_no, name from role where role_no = ?", key).Scan(&resp)
+		if tx.Error != nil {
+			return resp, tx.Error
+		}
+
+		if tx.RowsAffected < 1 {
+			return resp, miso.NewErr(ErrCodeRoleNotFound, "Role not found")
+		}
+		return resp, nil
+	})
 	return resp, err
 }
 
@@ -864,7 +863,7 @@ func checkRoleRes(ec miso.Rail, roleNo string, resCode string) (bool, error) {
 		return true, nil
 	}
 
-	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resCode))
+	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resCode), nil)
 	if e != nil {
 		return false, e
 	}
@@ -932,7 +931,7 @@ func listRoleRes(ec miso.Rail, roleNo string) ([]ERoleRes, error) {
 }
 
 func lookupUrlRes(ec miso.Rail, url string, method string) (CachedUrlRes, error) {
-	js, e := urlResCache.Get(ec, method+":"+url)
+	js, e := urlResCache.Get(ec, method+":"+url, nil)
 	if e != nil {
 		return CachedUrlRes{}, e
 	}
