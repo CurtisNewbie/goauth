@@ -1,6 +1,6 @@
 # goauth
 
-User and resource management service Implemented In Go (For Internal Use).
+Role, resource and path management service implemented in go.
 
 ## Client Lib Integration
 
