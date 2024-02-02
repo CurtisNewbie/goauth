@@ -28,19 +28,36 @@ func ScheduleTasks(rail miso.Rail) error {
 	if err != nil {
 		return err
 	}
+	err = miso.ScheduleDistributedTask(miso.Job{
+		Cron:            "*/15 * * * *",
+		CronWithSeconds: false,
+		Name:            "LoadResCodeCacheTask",
+		Run: func(ec miso.Rail) error {
+			return LoadResCodeCache(ec)
+		}})
+	if err != nil {
+		return err
+	}
 
 	// for the first time
 	miso.PostServerBootstrapped(func(c miso.Rail) error {
 		ec := miso.EmptyRail()
 		if e := LoadRoleResCache(ec); e != nil {
-			return fmt.Errorf("failed to load role resource, %v", e)
+			return fmt.Errorf("failed to load role resource to cache, %v", e)
 		}
 		return nil
 	})
 	miso.PostServerBootstrapped(func(c miso.Rail) error {
 		ec := miso.EmptyRail()
 		if e := LoadPathResCache(ec); e != nil {
-			return fmt.Errorf("failed to load path resource, %v", e)
+			return fmt.Errorf("failed to load path resource to cache, %v", e)
+		}
+		return nil
+	})
+	miso.PostServerBootstrapped(func(c miso.Rail) error {
+		ec := miso.EmptyRail()
+		if e := LoadResCodeCache(ec); e != nil {
+			return fmt.Errorf("failed to load resource code to cache, %v", e)
 		}
 		return nil
 	})

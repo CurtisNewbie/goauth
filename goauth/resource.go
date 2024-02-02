@@ -22,8 +22,14 @@ var (
 	// cache for url's resource, url -> CachedUrlRes
 	urlResCache = miso.NewRCache[CachedUrlRes]("goauth:url:res:v2", miso.RCacheConfig{Exp: 30 * time.Minute})
 
+	// pathNo cache
+	pathNoCache = miso.NewRCache[string]("goauth:pathno:cache", miso.RCacheConfig{Exp: 30 * time.Minute, NoSync: true})
+
 	// cache for role's resource, role + res -> flag ("1")
 	roleResCache = miso.NewRCache[string]("goauth:role:res", miso.RCacheConfig{Exp: 1 * time.Hour})
+
+	// resourceCode cache
+	resCodeCache = miso.NewRCache[string]("goauth:rescode:cache", miso.RCacheConfig{Exp: 30 * time.Minute, NoSync: true})
 )
 
 type PathType string
@@ -436,10 +442,21 @@ func GetRoleInfo(ec miso.Rail, req RoleInfoReq) (RoleInfoResp, error) {
 	return resp, err
 }
 
-func CreateResourceIfNotExist(ec miso.Rail, req CreateResReq, user common.User) error {
+func CreateResourceIfNotExist(rail miso.Rail, req CreateResReq, user common.User) error {
 	req.Name = strings.TrimSpace(req.Name)
 	req.Code = strings.TrimSpace(req.Code)
-	_, e := lockResourceGlobal(ec, func() (any, error) {
+
+	v, err := resCodeCache.Get(rail, req.Code, nil)
+	if err != nil && !miso.IsNoneErr(err) {
+		rail.Errorf("failed to lookup resCode from resCodeCache, %v, %v", req.Code, err)
+	} else {
+		if v != "" {
+			rail.Debugf("Resource '%s' already exist", req.Code)
+			return nil
+		}
+	}
+
+	_, e := lockResourceGlobal(rail, func() (any, error) {
 		var id int
 		tx := miso.GetMySQL().Raw(`select id from resource where code = ? limit 1`, req.Code).Scan(&id)
 		if tx.Error != nil {
@@ -447,7 +464,10 @@ func CreateResourceIfNotExist(ec miso.Rail, req CreateResReq, user common.User) 
 		}
 
 		if id > 0 {
-			ec.Debugf("Resource '%s' (%s) already exist", req.Code, req.Name)
+			if err := resCodeCache.Put(rail, req.Code, "1"); err != nil {
+				rail.Errorf("failed to load resCodeCache, %v, %v", req.Code, err)
+			}
+			rail.Debugf("Resource '%s' (%s) already exist", req.Code, req.Name)
 			return nil, nil
 		}
 
@@ -462,6 +482,13 @@ func CreateResourceIfNotExist(ec miso.Rail, req CreateResReq, user common.User) 
 			Table("resource").
 			Omit("Id", "CreateTime", "UpdateTime").
 			Create(&res)
+
+		if tx.Error != nil {
+			if err := resCodeCache.Put(rail, req.Code, "1"); err != nil {
+				rail.Errorf("failed to load resCodeCache, %v, %v", req.Code, err)
+			}
+		}
+
 		return nil, tx.Error
 	})
 	return e
@@ -472,20 +499,33 @@ func genPathNo(group string, url string, method string) string {
 	return "path_" + base64.StdEncoding.EncodeToString(cksum[:])
 }
 
-func CreatePathIfNotExist(ec miso.Rail, req CreatePathReq, user common.User) error {
+func CreatePathIfNotExist(rail miso.Rail, req CreatePathReq, user common.User) error {
 	req.Url = preprocessUrl(req.Url)
 	req.Group = strings.TrimSpace(req.Group)
 	req.Method = strings.ToUpper(strings.TrimSpace(req.Method))
 	pathNo := genPathNo(req.Group, req.Url, req.Method)
 
-	res, e := lockPath(ec, pathNo, func() (any, error) {
+	v, err := pathNoCache.Get(rail, pathNo, nil)
+	if err != nil && !miso.IsNoneErr(err) {
+		rail.Errorf("failed to lookup pathNo from pathNoCache, %v, %v", pathNo, err)
+	} else {
+		if v != "" {
+			rail.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
+			return nil
+		}
+	}
+
+	res, e := lockPath(rail, pathNo, func() (any, error) {
 		var id int
 		tx := miso.GetMySQL().Raw(`select id from path where path_no = ? limit 1`, pathNo).Scan(&id)
 		if tx.Error != nil {
 			return false, tx.Error
 		}
 		if id > 0 { // exists already
-			ec.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
+			if err := pathNoCache.Put(rail, pathNo, "1"); err != nil {
+				rail.Errorf("failed to store pathNoCache, %v, %v", pathNo, err)
+			}
+			rail.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
 			return false, nil
 		}
 
@@ -507,7 +547,12 @@ func CreatePathIfNotExist(ec miso.Rail, req CreatePathReq, user common.User) err
 			return false, tx.Error
 		}
 
-		ec.Infof("Created path (%s) '{%s}'", pathNo, req.Url)
+		rail.Infof("Created path (%s) '{%s}'", pathNo, req.Url)
+
+		if err := pathNoCache.Put(rail, pathNo, "1"); err != nil {
+			rail.Errorf("failed to store pathNoCache, %v, %v", pathNo, err)
+		}
+
 		return true, nil
 	})
 	if e != nil {
@@ -516,11 +561,11 @@ func CreatePathIfNotExist(ec miso.Rail, req CreatePathReq, user common.User) err
 
 	created := res.(bool)
 	if created { // reload cache for the path
-		loadOnePathResCacheAsync(ec, pathNo)
+		loadOnePathResCacheAsync(rail, pathNo)
 	}
 
 	if req.ResCode != "" { // rebind path and resource
-		return BindPathRes(ec, BindPathResReq{PathNo: pathNo, ResCode: req.ResCode})
+		return BindPathRes(rail, BindPathResReq{PathNo: pathNo, ResCode: req.ResCode})
 	}
 
 	return nil
@@ -928,12 +973,9 @@ func lookupUrlRes(ec miso.Rail, url string, method string) (CachedUrlRes, error)
 }
 
 // Load cache for path -> resource
-func LoadPathResCache(ec miso.Rail) error {
+func LoadPathResCache(rail miso.Rail) error {
 
-	_, e := miso.RLockRun(ec, "goauth:path:res:cache", func() (any, error) {
-
-		// ec.Info("Loading path resource cache")
-
+	_, e := miso.RLockRun(rail, "goauth:path:res:cache", func() (any, error) {
 		var paths []ExtendedPathRes
 		tx := miso.GetMySQL().
 			Raw("select p.*, pr.res_code from path p left join path_resource pr on p.path_no = pr.path_no").
@@ -947,10 +989,14 @@ func LoadPathResCache(ec miso.Rail) error {
 
 		for _, ep := range paths {
 			ep.Url = preprocessUrl(ep.Url)
-			if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, toCachedUrlRes(ep)); e != nil {
-				return nil, e
+			if e := urlResCache.Put(rail, ep.Method+":"+ep.Url, toCachedUrlRes(ep)); e != nil {
+				return nil, fmt.Errorf("failed to store urlResCache, %w", e)
 			}
-			// ec.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
+
+			pathNo := genPathNo(ep.Pgroup, ep.Url, ep.Method)
+			if err := pathNoCache.Put(rail, pathNo, ""); err != nil {
+				return nil, fmt.Errorf("failed to store pathNoCache, %w", err)
+			}
 		}
 		return nil, nil
 	})
@@ -1041,4 +1087,33 @@ func lockPathExec(ec miso.Rail, pathNo string, runnable miso.Runnable) error {
 // lock for role-resource cache
 func lockRoleResCache(ec miso.Rail, runnable miso.LRunnable[any]) (any, error) {
 	return miso.RLockRun(ec, "goauth:role:res:cache", runnable)
+}
+
+func listResCode(ec miso.Rail) ([]string, error) {
+	var codes []string
+	t := miso.GetMySQL().Raw("select code from resource").Scan(&codes)
+	if t.Error != nil {
+		return nil, t.Error
+	}
+
+	if codes == nil {
+		codes = []string{}
+	}
+	return codes, nil
+}
+
+// Load cache for resource code
+func LoadResCodeCache(rail miso.Rail) error {
+	l, err := listResCode(rail)
+	if err != nil {
+		return err
+	}
+
+	for _, code := range l {
+		err = resCodeCache.Put(rail, code, "1")
+		if err != nil {
+			return fmt.Errorf("failed to store resCodeCache: %v, %v", code, err)
+		}
+	}
+	return err
 }
