@@ -1,6 +1,8 @@
 package goauth
 
 import (
+	"strings"
+
 	"github.com/curtisnewbie/gocommon/common"
 	"github.com/curtisnewbie/gocommon/goauth"
 	"github.com/curtisnewbie/miso/miso"
@@ -24,9 +26,7 @@ type PathDoc struct {
 
 func RegisterWebEndpoints(rail miso.Rail) error {
 
-	goauth.ReportOnBoostrapped(rail, []goauth.AddResourceReq{
-		{Code: ResourceManageResources, Name: "Manage Resources Access"},
-	})
+	RegisterInternalPathResourcesOnBootstrapped()
 
 	miso.BaseRoute("/open/api/resource").Group(
 		miso.IPost("/add", CreateResourceIfNotExistEp).
@@ -212,4 +212,54 @@ func DeletePathEp(c *gin.Context, ec miso.Rail, req DeletePathReq) (any, error) 
 
 func UpdatePathEp(c *gin.Context, ec miso.Rail, req UpdatePathReq) (any, error) {
 	return nil, UpdatePath(ec, req)
+}
+
+func RegisterInternalPathResourcesOnBootstrapped() {
+
+	miso.PostServerBootstrapped(func(rail miso.Rail) error {
+
+		res := []goauth.AddResourceReq{
+			{Code: ResourceManageResources, Name: "Manage Resources Access"},
+		}
+		user := common.NilUser()
+
+		app := miso.GetPropStr(miso.PropAppName)
+		for _, res := range res {
+			if res.Code == "" || res.Name == "" {
+				continue
+			}
+			if e := CreateResourceIfNotExist(rail, CreateResReq(res), user); e != nil {
+				return e
+			}
+		}
+
+		routes := miso.GetHttpRoutes()
+		for _, route := range routes {
+			if route.Url == "" {
+				continue
+			}
+			var routeType = PtProtected
+			if route.Scope == miso.ScopePublic {
+				routeType = PtPublic
+			}
+
+			url := route.Url
+			if !strings.HasPrefix(url, "/") {
+				url = "/" + url
+			}
+
+			r := CreatePathReq{
+				Method:  route.Method,
+				Group:   app,
+				Url:     "/" + app + url,
+				Type:    routeType,
+				Desc:    route.Desc,
+				ResCode: route.Resource,
+			}
+			if err := CreatePathIfNotExist(rail, r, user); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
