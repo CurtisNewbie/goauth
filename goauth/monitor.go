@@ -24,6 +24,7 @@ type MonitorConf struct {
 type MonitoredService struct {
 	Service string
 	Path    string
+	All     bool
 }
 
 func LoadMonitoredServices() []MonitoredService {
@@ -76,8 +77,11 @@ func CreateMonitoredServiceWatch(rail miso.Rail, m MonitoredService) error {
 	tr := miso.NewTickRuner(time.Second*5, func() {
 		servers := miso.ListServers(m.Service)
 		miso.Debugf("Servers for %v: %+v", m.Service, servers)
-		for i := range servers {
-			server := servers[i]
+		if len(servers) < 1 {
+			return
+		}
+
+		doMonitor := func(server miso.Server) {
 			monitorPool.Go(func() {
 				rail := miso.EmptyRail()
 				res, err := QueryResourcePath(rail, server, m.Service, m.Path)
@@ -98,6 +102,16 @@ func CreateMonitoredServiceWatch(rail miso.Rail, m MonitoredService) error {
 					}
 				}
 			})
+		}
+
+		if m.All {
+			for i := range servers {
+				server := servers[i]
+				doMonitor(server)
+			}
+		} else {
+			server := servers[miso.RandomServerSelector(servers)]
+			doMonitor(server)
 		}
 	})
 
