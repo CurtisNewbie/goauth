@@ -446,14 +446,12 @@ func CreateResourceIfNotExist(rail miso.Rail, req CreateResReq, user common.User
 	req.Name = strings.TrimSpace(req.Name)
 	req.Code = strings.TrimSpace(req.Code)
 
-	v, err := resCodeCache.Get(rail, req.Code, nil)
-	if err != nil && !miso.IsNoneErr(err) {
+	ok, err := resCodeCache.Exists(rail, req.Code)
+	if err != nil {
 		rail.Errorf("failed to lookup resCode from resCodeCache, %v, %v", req.Code, err)
-	} else {
-		if v != "" {
-			rail.Debugf("Resource '%s' already exist", req.Code)
-			return nil
-		}
+	} else if ok {
+		rail.Debugf("Resource '%s' already exist", req.Code)
+		return nil
 	}
 
 	_, e := lockResourceGlobal(rail, func() (any, error) {
@@ -505,14 +503,12 @@ func CreatePathIfNotExist(rail miso.Rail, req CreatePathReq, user common.User) e
 	req.Method = strings.ToUpper(strings.TrimSpace(req.Method))
 	pathNo := genPathNo(req.Group, req.Url, req.Method)
 
-	v, err := pathNoCache.Get(rail, pathNo, nil)
-	if err != nil && !miso.IsNoneErr(err) {
+	ok, err := pathNoCache.Exists(rail, pathNo)
+	if err != nil {
 		rail.Errorf("failed to lookup pathNo from pathNoCache, %v, %v", pathNo, err)
-	} else {
-		if v != "" {
-			rail.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
-			return nil
-		}
+	} else if ok {
+		rail.Debugf("Path '%s %s' (%s) already exists", req.Method, req.Url, pathNo)
+		return nil
 	}
 
 	res, e := lockPath(rail, pathNo, func() (any, error) {
@@ -892,17 +888,16 @@ func TestResourceAccess(ec miso.Rail, req TestResAccessReq) (TestResAccessResp, 
 	return permitted, nil
 }
 
-func checkRoleRes(ec miso.Rail, roleNo string, resCode string) (bool, error) {
+func checkRoleRes(rail miso.Rail, roleNo string, resCode string) (bool, error) {
 	if roleNo == DefaultAdminRoleNo {
 		return true, nil
 	}
 
-	r, e := roleResCache.Get(ec, fmt.Sprintf("role:%s:res:%s", roleNo, resCode), nil)
+	ok, e := roleResCache.Exists(rail, fmt.Sprintf("role:%s:res:%s", roleNo, resCode))
 	if e != nil {
 		return false, e
 	}
-
-	return r != "", nil
+	return ok, nil
 }
 
 // Load cache for role -> resources
