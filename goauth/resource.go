@@ -3,7 +3,6 @@ package goauth
 import (
 	"crypto/md5"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,14 +17,10 @@ var (
 	permitted = TestResAccessResp{Valid: true}
 	forbidden = TestResAccessResp{Valid: false}
 
-	roleInfoCache = miso.NewRCache[RoleInfoResp]("goauth:role:info",
-		miso.RCacheConfig{
-			Exp:    10 * time.Minute,
-			NoSync: true,
-		})
+	roleInfoCache = miso.NewRCache[RoleInfoResp]("goauth:role:info", miso.RCacheConfig{Exp: 10 * time.Minute, NoSync: true})
 
 	// cache for url's resource, url -> CachedUrlRes
-	urlResCache = miso.NewRCache[string]("goauth:url:res", miso.RCacheConfig{Exp: 30 * time.Minute})
+	urlResCache = miso.NewRCache[CachedUrlRes]("goauth:url:res:v2", miso.RCacheConfig{Exp: 30 * time.Minute})
 
 	// cache for role's resource, role + res -> flag ("1")
 	roleResCache = miso.NewRCache[string]("goauth:role:res", miso.RCacheConfig{Exp: 1 * time.Hour})
@@ -418,13 +413,7 @@ func loadOnePathResCacheAsync(ec miso.Rail, pathNo string) {
 		}
 
 		ep.Url = preprocessUrl(ep.Url)
-		cachedStr, e := prepCachedUrlResStr(ec, ep)
-		if e != nil {
-			ec.Errorf("Failed to prepare cached url resource, pathNo: %s, %v", pathNo, e)
-			return
-		}
-
-		if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, cachedStr); e != nil {
+		if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, toCachedUrlRes(ep)); e != nil {
 			ec.Errorf("Failed to save cached url resource, pathNo: %s, %v", pathNo, e)
 			return
 		}
@@ -931,19 +920,10 @@ func listRoleRes(ec miso.Rail, roleNo string) ([]ERoleRes, error) {
 }
 
 func lookupUrlRes(ec miso.Rail, url string, method string) (CachedUrlRes, error) {
-	js, e := urlResCache.Get(ec, method+":"+url, nil)
+	cur, e := urlResCache.Get(ec, method+":"+url, nil)
 	if e != nil {
 		return CachedUrlRes{}, e
 	}
-	if js == "" {
-		return CachedUrlRes{}, miso.NewErr(fmt.Sprintf("Unable to find path '%s'", url))
-	}
-
-	var cur CachedUrlRes
-	if e = json.Unmarshal([]byte(js), &cur); e != nil {
-		return CachedUrlRes{}, e
-	}
-
 	return cur, nil
 }
 
@@ -967,11 +947,7 @@ func LoadPathResCache(ec miso.Rail) error {
 
 		for _, ep := range paths {
 			ep.Url = preprocessUrl(ep.Url)
-			cachedStr, e := prepCachedUrlResStr(ec, ep)
-			if e != nil {
-				return nil, e
-			}
-			if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, cachedStr); e != nil {
+			if e := urlResCache.Put(ec, ep.Method+":"+ep.Url, toCachedUrlRes(ep)); e != nil {
 				return nil, e
 			}
 			// ec.Infof("Loaded PathRes: '%s', '%s', '%s'", ep.Url, ep.Ptype, ep.ResNo)
@@ -982,8 +958,7 @@ func LoadPathResCache(ec miso.Rail) error {
 	return e
 }
 
-func prepCachedUrlResStr(ec miso.Rail, epath ExtendedPathRes) (string, error) {
-	url := epath.Url
+func toCachedUrlRes(epath ExtendedPathRes) CachedUrlRes {
 	cur := CachedUrlRes{
 		Id:      epath.Id,
 		Pgroup:  epath.Pgroup,
@@ -993,13 +968,7 @@ func prepCachedUrlResStr(ec miso.Rail, epath ExtendedPathRes) (string, error) {
 		Method:  epath.Method,
 		Ptype:   epath.Ptype,
 	}
-
-	j, e := json.Marshal(cur)
-	if e != nil {
-		ec.Errorf("Failed to marshal EPath for '%s', %v", url, e)
-		return "", e
-	}
-	return string(j), nil
+	return cur
 }
 
 // preprocess url, the processed url will always starts with '/' and never ends with '/'
