@@ -44,3 +44,9 @@ rabbitmq:
 logging.rolling.file:
   "/usr/src/goauth/logs/goauth.log"
 
+monitor:
+  - service: "user-vault"
+  - service: "logbot"
+  - service: "vfm"
+  - service: "docindexer"
+  - service: "fstore"

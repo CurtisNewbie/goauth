@@ -23,9 +23,6 @@ server:
   port: 8081
   gracefulShutdownTimeSec: 5
 
-monitor:
-  - service: "user-vault"
-
 consul:
   enabled: true
   consulAddress: localhost:8500
@@ -39,3 +36,10 @@ rabbitmq:
   vhost: "/"
 
 logging.level: info
+
+monitor:
+  - service: "user-vault"
+  - service: "logbot"
+  - service: "vfm"
+  - service: "docindexer"
+  - service: "fstore"
