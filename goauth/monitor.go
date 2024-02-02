@@ -74,7 +74,7 @@ func CreateMonitoredServiceWatch(rail miso.Rail, m MonitoredService) error {
 		return nil
 	}
 
-	tr := miso.NewTickRuner(time.Second*5, func() {
+	tr := miso.NewTickRuner(time.Second*15, func() {
 		servers := miso.ListServers(m.Service)
 		miso.Debugf("Servers for %v: %+v", m.Service, servers)
 		if len(servers) < 1 {
