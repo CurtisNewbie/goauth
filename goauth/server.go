@@ -10,5 +10,6 @@ func BootstrapServer(args []string) {
 	miso.PreServerBootstrap(ScheduleTasks)
 	miso.PreServerBootstrap(SubEventBus)
 	miso.PreServerBootstrap(RegisterWebEndpoints)
+	miso.PostServerBootstrapped(CreateMonitoredServiceWatches)
 	miso.BootstrapServer(args)
 }

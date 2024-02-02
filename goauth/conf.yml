@@ -23,6 +23,9 @@ server:
   port: 8081
   gracefulShutdownTimeSec: 5
 
+monitor:
+  - service: "user-vault"
+
 consul:
   enabled: true
   consulAddress: localhost:8500
