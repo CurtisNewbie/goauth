@@ -69,12 +69,7 @@ func CreateMonitoredServiceWatches(rail miso.Rail) error {
 }
 
 func CreateMonitoredServiceWatch(rail miso.Rail, m MonitoredService) error {
-	if err := miso.SubscribeConsulService(rail, m.Service); err != nil {
-		rail.Errorf("failed to subscribe to %v, %v", m.Service, err)
-		return nil
-	}
-
-	tr := miso.NewTickRuner(time.Second*15, func() {
+	triggered := func() {
 		servers := miso.ListServers(m.Service)
 		miso.Debugf("Servers for %v: %+v", m.Service, servers)
 		if len(servers) < 1 {
@@ -113,8 +108,13 @@ func CreateMonitoredServiceWatch(rail miso.Rail, m MonitoredService) error {
 			server := servers[miso.RandomServerSelector(servers)]
 			doMonitor(server)
 		}
-	})
+	}
 
+	if err := miso.SubscribeServerChanges(rail, m.Service, triggered); err != nil {
+		return fmt.Errorf("failed to subscribe server chagnes, service: %v, %v", m.Service, err)
+	}
+
+	tr := miso.NewTickRuner(time.Minute*1, triggered)
 	monitorServiceTickser = append(monitorServiceTickser, tr)
 	tr.Start()
 	return nil
