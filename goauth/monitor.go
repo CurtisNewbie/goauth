@@ -14,7 +14,7 @@ const (
 
 var (
 	monitorServiceTickser = []*miso.TickRunner{}
-	monitorPool           = miso.NewAsyncPool(500, 20)
+	monitorPool           = miso.NewAsyncPool(500, 10)
 )
 
 type MonitorConf struct {
@@ -68,53 +68,55 @@ func CreateMonitoredServiceWatches(rail miso.Rail) error {
 	return nil
 }
 
-func CreateMonitoredServiceWatch(rail miso.Rail, m MonitoredService) error {
-	triggered := func() {
-		servers := miso.ListServers(m.Service)
-		miso.Debugf("Servers for %v: %+v", m.Service, servers)
-		if len(servers) < 1 {
-			return
-		}
-
-		doMonitor := func(server miso.Server) {
-			monitorPool.Go(func() {
-				rail := miso.EmptyRail()
-				res, err := QueryResourcePath(rail, server, m.Service, m.Path)
-				if err != nil {
-					rail.Errorf("monitor service %v failed, %v", m.Service, err)
-				} else {
-					rail.Debugf("service %v (%v:%v), returned resouces/paths: %+v", m.Service, server.Address, server.Port, res)
-					user := common.GetUser(rail) // just to satisfy the method, it's always a zero value
-					for _, r := range res.Resources {
-						if err := CreateResourceIfNotExist(rail, r, user); err != nil {
-							rail.Errorf("failed to create resource, req: %+v, %v", r, err)
-						}
-					}
-					for _, r := range res.Paths {
-						if err := CreatePathIfNotExist(rail, r, user); err != nil {
-							rail.Errorf("failed to create path, req: %+v, %v", r, err)
-						}
-					}
-				}
-			})
-		}
-
-		if m.All {
-			for i := range servers {
-				server := servers[i]
-				doMonitor(server)
-			}
+func QueryResourcePathAsync(rail miso.Rail, server miso.Server, m MonitoredService) {
+	monitorPool.Go(func() {
+		res, err := QueryResourcePath(rail, server, m.Service, m.Path)
+		if err != nil {
+			rail.Errorf("monitor service %v failed, %v", m.Service, err)
 		} else {
-			server := servers[miso.RandomServerSelector(servers)]
-			doMonitor(server)
+			rail.Debugf("service %v (%v:%v), returned resouces/paths: %+v", m.Service, server.Address, server.Port, res)
+			user := common.NilUser() // just to satisfy the method, it's always a zero value
+			for _, r := range res.Resources {
+				if err := CreateResourceIfNotExist(rail, r, user); err != nil {
+					rail.Errorf("failed to create resource, req: %+v, %v", r, err)
+				}
+			}
+			for _, r := range res.Paths {
+				if err := CreatePathIfNotExist(rail, r, user); err != nil {
+					rail.Errorf("failed to create path, req: %+v, %v", r, err)
+				}
+			}
 		}
+	})
+}
+
+func TriggerResourcePathCollection(rail miso.Rail, m MonitoredService) {
+	servers := miso.ListServers(m.Service)
+	if len(servers) < 1 {
+		return
 	}
 
-	if err := miso.SubscribeServerChanges(rail, m.Service, triggered); err != nil {
+	if m.All {
+		for i := range servers {
+			server := servers[i]
+			QueryResourcePathAsync(rail, server, m)
+		}
+	} else {
+		server := servers[miso.RandomServerSelector(servers)]
+		QueryResourcePathAsync(rail, server, m)
+	}
+}
+
+func CreateMonitoredServiceWatch(rail miso.Rail, m MonitoredService) error {
+	if err := miso.SubscribeServerChanges(rail, m.Service, func() {
+		TriggerResourcePathCollection(miso.EmptyRail(), m)
+	}); err != nil {
 		return fmt.Errorf("failed to subscribe server chagnes, service: %v, %v", m.Service, err)
 	}
 
-	tr := miso.NewTickRuner(time.Minute*1, triggered)
+	tr := miso.NewTickRuner(time.Minute*1, func() {
+		TriggerResourcePathCollection(miso.EmptyRail(), m)
+	})
 	monitorServiceTickser = append(monitorServiceTickser, tr)
 	tr.Start()
 	return nil
