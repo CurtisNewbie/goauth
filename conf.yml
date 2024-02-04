@@ -43,3 +43,4 @@ monitor:
   - service: "vfm"
   - service: "docindexer"
   - service: "fstore"
+  - service: "postbox"
