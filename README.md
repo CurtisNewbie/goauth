@@ -1,6 +1,6 @@
 # goauth
 
-Role, resource and endpoint management service implemented in go.
+Role, resource and endpoint management service implemented in go. All my go projects integrate with goauth using [github.com/curtisnewbie/gocommon](https://github.com/curtisnewbie/gocommon).
 
 ## Main Concepts
 
@@ -10,7 +10,7 @@ Services can report their resources and endpoints to goauth synchronously using 
 
 <img src="./doc/goauth_polling_mechanism.png" height="300px"></img>
 
-goauth is designed to work with a gateway service (e.g., gatekeeper) as follows:
+goauth is designed to work with a gateway service (e.g., [gatekeeper](https://github.com/curtisnewbie/gatekeeper)) as follows:
 
 <img src="./doc/goauth_gateway.png" height="350px"></img>
 
