@@ -11,9 +11,8 @@ func ScheduleTasks(rail miso.Rail) error {
 		CronWithSeconds:        false,
 		Name:                   "LoadRoleResCacheTask",
 		TriggeredOnBoostrapped: true,
-		Run: func(ec miso.Rail) error {
-			return LoadRoleResCache(ec)
-		}})
+		Run:                    LoadRoleResCache,
+	})
 	if err != nil {
 		return err
 	}
@@ -22,9 +21,8 @@ func ScheduleTasks(rail miso.Rail) error {
 		CronWithSeconds:        false,
 		Name:                   "LoadPathResCacheTask",
 		TriggeredOnBoostrapped: true,
-		Run: func(ec miso.Rail) error {
-			return LoadPathResCache(ec)
-		}})
+		Run:                    LoadPathResCache,
+	})
 	if err != nil {
 		return err
 	}
@@ -33,9 +31,8 @@ func ScheduleTasks(rail miso.Rail) error {
 		CronWithSeconds:        false,
 		Name:                   "LoadResCodeCacheTask",
 		TriggeredOnBoostrapped: true,
-		Run: func(ec miso.Rail) error {
-			return LoadResCodeCache(ec)
-		}})
+		Run:                    LoadResCodeCache,
+	})
 	if err != nil {
 		return err
 	}
