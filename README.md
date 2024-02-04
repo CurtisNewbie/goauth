@@ -2,6 +2,13 @@
 
 Role, resource and endpoint management service implemented in go. All my go projects integrate with goauth using [github.com/curtisnewbie/gocommon](https://github.com/curtisnewbie/gocommon).
 
+## Requirements
+
+- MySQL
+- Consul
+- RabbitMQ
+- Redis
+
 ## Main Concepts
 
 A role is merely a role name with a bunch resources bound to it. A Resource indicates that someone has the permission to access certain endpoints. These endpoints are uniquely identified by a HTTP method and a request URL. goauth is responsible for managing these three concepts. Administrators of a system can create a new role or change the resources that are bound to a role, but the resources and the endpoints are reported by the protected backend services.
