@@ -427,9 +427,9 @@ func loadOnePathResCacheAsync(ec miso.Rail, pathNo string) {
 }
 
 func GetRoleInfo(ec miso.Rail, req RoleInfoReq) (RoleInfoResp, error) {
-	resp, err := roleInfoCache.Get(ec, req.RoleNo, func(rail miso.Rail, key string) (RoleInfoResp, error) {
+	resp, err := roleInfoCache.Get(ec, req.RoleNo, func() (RoleInfoResp, error) {
 		var resp RoleInfoResp
-		tx := miso.GetMySQL().Raw("select role_no, name from role where role_no = ?", key).Scan(&resp)
+		tx := miso.GetMySQL().Raw("select role_no, name from role where role_no = ?", req.RoleNo).Scan(&resp)
 		if tx.Error != nil {
 			return resp, tx.Error
 		}
