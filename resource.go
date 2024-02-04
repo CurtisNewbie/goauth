@@ -26,7 +26,7 @@ var (
 	pathNoCache = miso.NewRCache[string]("goauth:pathno:cache", miso.RCacheConfig{Exp: 30 * time.Minute, NoSync: true})
 
 	// cache for role's resource, role + res -> flag ("1")
-	roleResCache = miso.NewRCache[string]("goauth:role:res", miso.RCacheConfig{Exp: 1 * time.Hour})
+	roleResCache = miso.NewRCache[string]("goauth:role:res", miso.RCacheConfig{Exp: 1 * time.Hour, NoSync: true})
 
 	// resourceCode cache
 	resCodeCache = miso.NewRCache[string]("goauth:rescode:cache", miso.RCacheConfig{Exp: 30 * time.Minute, NoSync: true})
