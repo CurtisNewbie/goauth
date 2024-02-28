@@ -1,5 +1,7 @@
 # goauth
 
+**This project is archived. If you are interested, please checkout [github.com/curtisnewbie/user-vault](https://github.com/curtisnewbie/user-vault).**
+
 Role, resource and endpoint management service implemented in go. All my go projects integrate with goauth using [github.com/curtisnewbie/gocommon](https://github.com/curtisnewbie/gocommon).
 
 ## Requirements
